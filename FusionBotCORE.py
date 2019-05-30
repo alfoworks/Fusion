@@ -14,7 +14,8 @@ from vk_api.utils import get_random_id
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.insert(0, current_dir)
 
-from FusionBotMODULES import ModuleManager, Logger
+from FusionBotMODULES import ModuleManager, Logger  # не пытайтесь решить ошибку здесь, исправление двумя строками выше
+# IDE не смотрит код на внешние исправления :C
 
 ####################################
 
