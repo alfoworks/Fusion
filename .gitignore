@@ -1,3 +1,4 @@
 Modules/HWModule.py
 botData.pkl
 .idea
+*.pyc
