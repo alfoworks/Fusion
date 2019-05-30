@@ -33,7 +33,7 @@ class Logger:
 
     def log(self, level: int, text: str):
         log_level = self.log_levels[level]
-        print("[%s]\t[%s]\t[%s]: %s" % (
+        print("[%s] [%s] [%s]: %s" % (
             colored(self.get_time(), "magenta"),
             colored(self.thread + " thread/" + log_level[0], log_level[1], log_level[2], log_level[3]),
             self.app,
