@@ -7,6 +7,7 @@ import math
 
 from os import path, environ
 from requests import ReadTimeout
+from pyotp import TOTP
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.utils import get_random_id
@@ -21,13 +22,14 @@ from FusionBotMODULES import ModuleManager, Logger  # не пытайтесь р
 
 vk_token = environ.get("fusion_token")
 group_id = environ.get("fusion_id")
+totp = TOTP(environ.get("fusion_TOTP_key"))
 
 ####################################
 
 start_time = time.time()
 
 
-class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception 
+class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
     logger = Logger(thread="Longpoll")
 
     def listen(self):
@@ -80,31 +82,42 @@ for event in longpoll.listen():
             )
             continue
         command: ModuleManager.Command = module_manager.commands[cmd]
-        if not module_manager.check_guild(command.module, event.obj.peer_id):
-            logger.log(1, "Команда недоступна в данном диалоге")
-            vk_api.messages.send(
-                peer_id=event.obj.peer_id,
-                message="Команда не найдена!",
-                random_id=get_random_id()
-            )
-            continue
-        if not module_manager.has_permissions(command, event.obj.from_id):
-            if not command.no_args_pass or args:
-                logger.log(1, "Нет прав.")
-                vk_api.messages.send(
-                    peer_id=event.obj.peer_id,
-                    message="У вас недостаточно прав для выполнения данной команды.",
-                    random_id=get_random_id()
-                )
-                continue
         keys = []
         for arg in args:
             if arg.startswith("--") and len(arg) > 2 and arg not in keys:
                 keys.append(arg)
-
+        otp_pwd_index = None
         for i, key in enumerate(keys):
             args.remove(key)
             keys[i] = key[2:]
+            if "otp" in keys[i]:
+                otp_pwd_index = i
+
+        pass_user = False
+        if otp_pwd_index:
+            key: str = keys[otp_pwd_index]
+            [_key, value] = key.split("=")
+            if _key == "otp":
+                if totp.verify(value):
+                    pass_user = True
+        if not pass_user:
+            if not module_manager.check_guild(command.module, event.obj.peer_id):
+                logger.log(1, "Команда недоступна в данном диалоге")
+                vk_api.messages.send(
+                    peer_id=event.obj.peer_id,
+                    message="Команда не найдена!",
+                    random_id=get_random_id()
+                )
+                continue
+            if not module_manager.has_permissions(command, event.obj.from_id):
+                if not command.no_args_pass or args:
+                    logger.log(1, "Нет прав.")
+                    vk_api.messages.send(
+                        peer_id=event.obj.peer_id,
+                        message="У вас недостаточно прав для выполнения данной команды.",
+                        random_id=get_random_id()
+                    )
+                    continue
         try:
             ok = command.run(event, args, keys)
         except Exception as e:
