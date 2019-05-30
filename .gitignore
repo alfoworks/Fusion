@@ -2,3 +2,5 @@ Modules/HWModule.py
 botData.pkl
 .idea
 *.pyc
+__pycache__/
+Modules/__pycache__/
