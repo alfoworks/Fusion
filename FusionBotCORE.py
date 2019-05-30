@@ -27,7 +27,7 @@ group_id = environ.get("fusion_id")
 start_time = time.time()
 
 
-class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
+class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception 
     logger = Logger(thread="Longpoll")
 
     def listen(self):
