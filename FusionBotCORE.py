@@ -84,31 +84,32 @@ for event in longpoll.listen():
         command: ModuleManager.Command = module_manager.commands[cmd]
         keys = []
         for arg in args:
-            if arg.startswith("--") and len(arg) > 2 and arg not in keys:
+            if arg.startswith("—") and len(arg) > 2 and arg not in keys:  # вк заменяет -- на —. Фикс не повлияет на UX
                 keys.append(arg)
         otp_pwd_index = None
         for i, key in enumerate(keys):
             args.remove(key)
-            keys[i] = key[2:]
+            keys[i] = key[1:]
             if "otp" in keys[i]:
                 otp_pwd_index = i
 
         pass_user = False
-        if otp_pwd_index:
+        if otp_pwd_index is not None:
             key: str = keys[otp_pwd_index]
+            del keys[otp_pwd_index]
             [_key, value] = key.split("=")
             if _key == "otp":
                 if totp.verify(value):
                     pass_user = True
+        if not module_manager.check_guild(command.module, event.obj.peer_id):
+            logger.log(1, "Команда недоступна в данном диалоге")
+            vk_api.messages.send(
+                peer_id=event.obj.peer_id,
+                message="Команда не найдена!",
+                random_id=get_random_id()
+            )
+            continue
         if not pass_user:
-            if not module_manager.check_guild(command.module, event.obj.peer_id):
-                logger.log(1, "Команда недоступна в данном диалоге")
-                vk_api.messages.send(
-                    peer_id=event.obj.peer_id,
-                    message="Команда не найдена!",
-                    random_id=get_random_id()
-                )
-                continue
             if not module_manager.has_permissions(command, event.obj.from_id):
                 if not command.no_args_pass or args:
                     logger.log(1, "Нет прав.")
