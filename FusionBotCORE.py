@@ -75,6 +75,9 @@ for event in longpoll.listen():
             )
             continue
         command: ModuleManager.Command = module_manager.commands[cmd]
+
+        # ARG PARSE #
+
         keys = []
         for arg in args:
             if arg.startswith("—") and len(arg) > 2 and arg not in keys:  # вк заменяет -- на —. Фикс не повлияет на UX
@@ -85,6 +88,8 @@ for event in longpoll.listen():
             keys[i] = key[1:]
             if "otp" in keys[i]:
                 otp_pwd_index = i
+
+        # ========= #
 
         pass_user = False
         if otp_pwd_index is not None:
