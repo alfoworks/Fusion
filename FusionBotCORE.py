@@ -1,5 +1,3 @@
-import inspect
-import sys
 import time
 import traceback
 import os
@@ -11,12 +9,7 @@ from pyotp import TOTP
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.utils import get_random_id
-
-current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0, current_dir)
-
-from FusionBotMODULES import ModuleManager, Logger  # не пытайтесь решить ошибку здесь, исправление двумя строками выше
-# IDE не смотрит код на внешние исправления :C
+from FusionBotMODULES import ModuleManager, Logger
 
 ####################################
 
@@ -46,7 +39,7 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
 module_manager: ModuleManager = ModuleManager()
 if not path.isdir(module_manager.MODULES_DIR):
     os.mkdir(module_manager.MODULES_DIR)
-logger = module_manager.logger
+logger = Logger()
 logger.log(2, "Starting")
 
 client = VkApi(token=vk_token)
@@ -130,7 +123,10 @@ for event in longpoll.listen():
             logger.log(4, str(e))
         else:
             if not ok:
+                keys_user = []
+                for key in command.keys:
+                    keys_user.append("[--%s]" % key)
                 text = "Недостаточно аргументов!\n %s%s %s %s" % (module_manager.cmd_prefix, command.name,
-                                                                  command.args, " ".join(keys))
+                                                                  command.args, " ".join(keys_user))
                 vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                 logger.log(1, "Недостаточно аргументов.")

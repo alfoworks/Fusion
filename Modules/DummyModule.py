@@ -15,8 +15,8 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
     GUILD_LOCK = []
 
     # Основной метод модуля, выполняется в конце инициализации бота (после загрузки параметров и модулей)
-    def run(self, api: VkApi, module_manager: FusionBotMODULES.ModuleManager):
-        # api - обьект, через который вы будете отправлять сообщения и делать любую другую работу с вк
+    def run(self, client: VkApi, module_manager: FusionBotMODULES.ModuleManager):
+        # client - обьект, через который вы будете отправлять сообщения и делать любую другую работу с вк
         # moduleManager - обьект менеджера модулей. Предоставляет регистры
 
         """
@@ -63,7 +63,7 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
 
             # главный метод команды. Вызывается при вызове команды.
             def run(self, event: VkBotEvent, args, keys):
-                api.get_api().messages.send(
+                client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
                     message="Пощел нахуй!",
                     random_id=get_random_id()
@@ -77,5 +77,5 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
         module_manager.add_command(DummyCommand(), self)  # Регистрация команды
 
     # Данный метод вызывается при ЛЮБОМ событии, которое получает бот через LongPoll.
-    def on_event(self, api: VkApi, event: VkBotEvent):
+    def on_event(self, client: VkApi, event: VkBotEvent):
         pass

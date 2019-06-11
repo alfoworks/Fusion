@@ -9,14 +9,13 @@ class Module(FusionBotMODULES.ModuleManager.Module):
     description = "Модуль, который добавляет бесполезные, но интересные вещи."
     GUILD_LOCK = []
 
-    def run(self, api: VkApi, module_manager: FusionBotMODULES.ModuleManager):
+    def run(self, client: VkApi, module_manager: FusionBotMODULES.ModuleManager):
         class ShrugCommand(FusionBotMODULES.ModuleManager.Command):
             name = "shrug"
-            description = '¯\_(ツ)_/¯'
+            description = "¯\_(ツ)_/¯"
 
-            @staticmethod
-            def run(event: VkBotEvent):
-                api.get_api().messages.send(
+            def run(self, event: VkBotEvent, args, keys):
+                client.get_api().messages.send(
                     message="¯\_(ツ)_/¯",
                     peer_id=event.obj.peer_id,
                     random_id=get_random_id()

@@ -16,7 +16,7 @@ class Logger:
         ["Verbose", None, None, None],
         ["Debug", "green", None, None],
         ["Info", "green", None, None],
-        ["Warning", "yellow", None, None],
+        ["Warn", "yellow", None, None],
         ["Error", "red", None, None],
         ["FATAL", "red", None, None],
         ["Silent", None, None, None],
@@ -48,7 +48,7 @@ class ModuleManager:
     commands = dict()
     PARAMS_FILE = "botData.pkl"
     MODULES_DIR = "Modules"
-    logger = Logger()
+    logger = Logger(app="Module Manager")
     cmd_prefix = "/"
 
     class Module:
@@ -166,15 +166,15 @@ class ModuleManager:
 
         self.add_module(BaseModule())
 
-    def run_modules(self, api: VkApi):
-        for _, mod in self.modules.items():
-            mod.run(api, self)
+    def run_modules(self, client: VkApi):
+        for key in list(self.modules):
+            mod = self.modules[key]
+            mod.run(client, self)
 
 
 class BaseModule(ModuleManager.Module):
     name = "BaseModule"
     description = "Встроенный модуль с базовыми функциями"
-
     @staticmethod
     def parse_value(value, value_type):
         if value_type == int:
@@ -191,13 +191,32 @@ class BaseModule(ModuleManager.Module):
         else:
             return None
 
-    def run(self, api: VkApi, module_manager: ModuleManager):
+    def run(self, client: VkApi, module_manager: ModuleManager):
+        logger = Logger(app="BaseModule")
+
         class ModulesCommand(ModuleManager.Command):
             name = "modules"
             description = "Информация о модулях и управление ими"
             keys = ["reload"]
 
             def run(self, event: VkBotEvent, args, keys):
+                if "reload" in keys:
+                    client.get_api().messages.send(
+                        peer_id=event.obj.peer_id,
+                        message="Перезагрузка модулей..",
+                        random_id=get_random_id(),
+                    )
+                    logger.log(2, "Reloading modules")
+                    for name, _ in list(module_manager.modules.items()):
+                        module_manager.unload_module(name)
+                    module_manager.load_modules()
+                    module_manager.run_modules(client)
+                    client.get_api().messages.send(
+                        peer_id=event.obj.peer_id,
+                        message="Модули перезагружены.",
+                        random_id=get_random_id(),
+                    )
+                    return True
                 text = ""
                 counter = 0
                 for _, mod in list(module_manager.modules.items()):
@@ -205,7 +224,7 @@ class BaseModule(ModuleManager.Module):
                         text = text + "%s: %s\n" % (mod.name, mod.description)
                         counter += 1
                 text = "Всего модулей: %s\n\n" % counter + text
-                api.get_api().messages.send(
+                client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
                     message=text,
                     random_id=get_random_id()
@@ -231,7 +250,7 @@ class BaseModule(ModuleManager.Module):
                     text1 = text1 + "%s%s %s %s\n" % (module_manager.cmd_prefix, command.name, command.args,
                                                       " ".join(keys_1))
                     text1 = text1 + " - " + command.description + "\n\n"
-                api.get_api().messages.send(
+                client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
                     message=text1,
                     random_id=get_random_id()
@@ -249,10 +268,10 @@ class BaseModule(ModuleManager.Module):
             def run(self, event: VkBotEvent, args, keys):
                 if len(args) >= 3 and args[0] == "set":
                     if args[1] not in module_manager.params:
-                        api.get_api().messages.send(peer_id=event.obj.peer_id,
-                                                    message="Параметр с таким именем не найден.",
-                                                    random_id=get_random_id()
-                                                    )
+                        client.get_api().messages.send(peer_id=event.obj.peer_id,
+                                                       message="Параметр с таким именем не найден.",
+                                                       random_id=get_random_id()
+                                                       )
 
                         return True
 
@@ -260,14 +279,14 @@ class BaseModule(ModuleManager.Module):
                     try:
                         val = BaseModule.parse_value(" ".join(args[2:]), type(param))
                     except ValueError:
-                        api.get_api().messages.send(
+                        client.get_api().messages.send(
                             peer_id=event.obj.peer_id,
                             message="Неподходящее для типа \"%s\" значение." % type(param).__name__,
                             random_id=get_random_id()
                         )
                         return True
                     if val is None:
-                        api.get_api().messages.send(
+                        client.get_api().messages.send(
                             peer_id=event.obj.peer_id,
                             message="Параметр \"%s\" нелья изменить с помощью команды." % args[1],
                             random_id=get_random_id()
@@ -278,7 +297,7 @@ class BaseModule(ModuleManager.Module):
                 text = "Список параметров:\n\n"
                 for k, v in module_manager.params.items():
                     text = text + "%s [%s]: %s\n" % (k, type(v).__name__, v)
-                api.get_api().messages.send(
+                client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
                     message=text,
                     random_id=get_random_id()
@@ -322,7 +341,7 @@ class BaseModule(ModuleManager.Module):
                         text = "У данного пользователя нет ни одного разрешения."
                 else:
                     return False
-                api.get_api().messages.send(
+                client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
                     message=text,
                     random_id=get_random_id(),
