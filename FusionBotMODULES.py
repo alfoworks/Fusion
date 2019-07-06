@@ -149,6 +149,33 @@ class ModuleManager:
             self.save_params()
 
 
+class Fusion(VkApi):
+    module_manager = ModuleManager()
+    MODULES_DIR = "Modules"
+    cmd_prefix = "/"
+
+    def load_modules(self):
+        for file in os.listdir(self.MODULES_DIR):
+            if file.endswith(".py"):
+                module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
+                                    fromlist=["Module"]).Module()
+                self.module_manager.add_module(module)
+                self.module_manager.logger.log(2, "Loaded module \"%s\"" % module.name)
+        self.module_manager.add_module(BaseModule())
+
+    def run_modules(self, fusionClient: VkApi):
+        for key_1 in list(self.module_manager.modules):
+            module = self.module_manager.modules[key_1]
+            module.run(fusionClient, self)
+
+    def load_params(self):
+        if not os.path.isfile(self.module_manager.PARAMS_FILE):
+            self.module_manager.save_params()
+        else:
+            with open(self.module_manager.PARAMS_FILE, "rb") as f:
+                self.module_manager.params = pickle.load(f)
+
+
 class BaseModule(ModuleManager.Module):
     name = "BaseModule"
     description = "Встроенный модуль с базовыми функциями"
@@ -168,7 +195,7 @@ class BaseModule(ModuleManager.Module):
         else:
             return None
 
-    def run(self, client: VkApi, module_manager: ModuleManager):
+    def run(self, client: Fusion):
         logger = Logger(app="BaseModule")
 
         class ModulesCommand(ModuleManager.Command):
@@ -184,10 +211,10 @@ class BaseModule(ModuleManager.Module):
                         random_id=get_random_id(),
                     )
                     logger.log(2, "Reloading modules")
-                    for name, _ in list(module_manager.modules.items()):
-                        module_manager.unload_module(name)
-                    module_manager.load_modules()
-                    module_manager.run_modules(client)
+                    for name, _ in list(client.module_manager.modules.items()):
+                        client.module_manager.unload_module(name)
+                    client.load_modules()
+                    client.run_modules(client)
                     client.get_api().messages.send(
                         peer_id=event.obj.peer_id,
                         message="Модули перезагружены.",
@@ -196,8 +223,8 @@ class BaseModule(ModuleManager.Module):
                     return True
                 text = ""
                 counter = 0
-                for _, mod in list(module_manager.modules.items()):
-                    if module_manager.check_guild(mod, event.obj.peer_id):
+                for _, mod in list(client.module_manager.modules.items()):
+                    if client.module_manager.check_guild(mod, event.obj.peer_id):
                         text = text + "%s: %s\n" % (mod.name, mod.description)
                         counter += 1
                 text = "Всего модулей: %s\n\n" % counter + text
@@ -208,7 +235,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        module_manager.add_command(ModulesCommand(), self)
+        client.module_manager.add_command(ModulesCommand(), self)
 
         class CmdsCommand(ModuleManager.Command):
             name = "cmds"
@@ -216,15 +243,15 @@ class BaseModule(ModuleManager.Module):
 
             def run(self, event: VkBotEvent, args, keys):
                 text1 = "Список команд:\n\n"
-                for _, command in module_manager.commands.items():
-                    if not module_manager.check_guild(command.module, event.obj.peer_id):
+                for _, command in client.module_manager.commands.items():
+                    if not client.module_manager.check_guild(command.module, event.obj.peer_id):
                         continue
-                    if not module_manager.has_permissions(command, event.obj.from_id):
+                    if not client.module_manager.has_permissions(command, event.obj.from_id):
                         continue
                     keys_1 = []
                     for key_1 in command.keys:
                         keys_1.append("[--%s]" % key_1)
-                    text1 = text1 + "%s%s %s %s\n" % (module_manager.cmd_prefix, command.name, command.args,
+                    text1 = text1 + "%s%s %s %s\n" % (client.cmd_prefix, command.name, command.args,
                                                       " ".join(keys_1))
                     text1 = text1 + " - " + command.description + "\n\n"
                 client.get_api().messages.send(
@@ -234,7 +261,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        module_manager.add_command(CmdsCommand(), self)
+        client.module_manager.add_command(CmdsCommand(), self)
 
         class ParamsCommand(ModuleManager.Command):
             name = "params"
@@ -244,7 +271,7 @@ class BaseModule(ModuleManager.Module):
 
             def run(self, event: VkBotEvent, args, keys):
                 if len(args) >= 3 and args[0] == "set":
-                    if args[1] not in module_manager.params:
+                    if args[1] not in client.module_manager.params:
                         client.get_api().messages.send(peer_id=event.obj.peer_id,
                                                        message="Параметр с таким именем не найден.",
                                                        random_id=get_random_id()
@@ -252,7 +279,7 @@ class BaseModule(ModuleManager.Module):
 
                         return True
 
-                    param = module_manager.params[args[1]]
+                    param = client.module_manager.params[args[1]]
                     try:
                         val = BaseModule.parse_value(" ".join(args[2:]), type(param))
                     except ValueError:
@@ -268,11 +295,11 @@ class BaseModule(ModuleManager.Module):
                             message="Параметр \"%s\" нелья изменить с помощью команды." % args[1],
                             random_id=get_random_id()
                         )
-                    module_manager.params[args[1]] = val
-                    module_manager.save_params()
+                    client.module_manager.params[args[1]] = val
+                    client.module_manager.save_params()
                     return True
                 text = "Список параметров:\n\n"
-                for k, v in module_manager.params.items():
+                for k, v in client.module_manager.params.items():
                     text = text + "%s [%s]: %s\n" % (k, type(v).__name__, v)
                 client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
@@ -281,7 +308,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        module_manager.add_command(ParamsCommand(), self)
+        client.module_manager.add_command(ParamsCommand(), self)
 
         class PermissionsCommand(ModuleManager.Command):
             name = "permissions"
@@ -299,17 +326,17 @@ class BaseModule(ModuleManager.Module):
                 if not args[1]:
                     return False
                 if args[0] == "add":
-                    if user_id not in module_manager.params["permissions"]:
-                        module_manager.params["permissions"][user_id] = []
-                    if args[1] not in module_manager.params["permissions"][user_id]:
-                        module_manager.params["permissions"][user_id].append(args[1])
+                    if user_id not in client.module_manager.params["permissions"]:
+                        client.module_manager.params["permissions"][user_id] = []
+                    if args[1] not in client.module_manager.params["permissions"][user_id]:
+                        client.module_manager.params["permissions"][user_id].append(args[1])
                         text = "Успешно добавлено разрешение %s пользователю с id %s." % (args[1], user_id)
                     else:
                         text = "У пользователя с id %s уже есть разрешение %s." % (user_id, args[1])
                 elif args[0] == "remove":
-                    if user_id in module_manager.params["permissions"]:
+                    if user_id in client.module_manager.params["permissions"]:
                         try:
-                            module_manager.params["permissions"][user_id].remove(args[1])
+                            client.module_manager.params["permissions"][user_id].remove(args[1])
                         except ValueError:
                             text = "У данного пользователя нет такого разрешения."
                         else:
@@ -323,8 +350,8 @@ class BaseModule(ModuleManager.Module):
                     message=text,
                     random_id=get_random_id(),
                 )
-                module_manager.save_params()
+                client.module_manager.save_params()
                 return True
 
-        module_manager.add_param("permissions", {})
-        module_manager.add_command(PermissionsCommand(), self)
+        client.module_manager.add_param("permissions", {})
+        client.module_manager.add_command(PermissionsCommand(), self)

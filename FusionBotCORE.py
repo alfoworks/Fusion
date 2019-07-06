@@ -1,4 +1,3 @@
-import pickle
 import time
 import traceback
 import os
@@ -7,10 +6,9 @@ import math
 from os import path, environ
 from requests import ReadTimeout
 from pyotp import TOTP
-from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.utils import get_random_id
-from FusionBotMODULES import ModuleManager, Logger, BaseModule
+from FusionBotMODULES import ModuleManager, Logger, Fusion
 
 ####################################
 
@@ -21,33 +19,6 @@ totp = TOTP(environ.get("fusion_TOTP_key"))
 ####################################
 
 start_time = time.time()
-
-
-class Fusion(VkApi):
-    module_manager = ModuleManager()
-    MODULES_DIR = "Modules"
-    cmd_prefix = "/"
-
-    def load_modules(self):
-        for file in os.listdir(self.MODULES_DIR):
-            if file.endswith(".py"):
-                module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
-                                    fromlist=["Module"]).Module()
-                self.module_manager.add_module(module)
-                self.module_manager.logger.log(2, "Loaded module \"%s\"" % module.name)
-        self.module_manager.add_module(BaseModule())
-
-    def run_modules(self, fusionClient: VkApi):
-        for key_1 in list(self.module_manager.modules):
-            module = self.module_manager.modules[key_1]
-            module.run(fusionClient, self)
-
-    def load_params(self):
-        if not os.path.isfile(self.module_manager.PARAMS_FILE):
-            self.module_manager.save_params()
-        else:
-            with open(self.module_manager.PARAMS_FILE, "rb") as f:
-                self.module_manager.params = pickle.load(f)
 
 
 class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
