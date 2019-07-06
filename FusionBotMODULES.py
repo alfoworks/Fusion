@@ -166,7 +166,7 @@ class Fusion(VkApi):
     def run_modules(self, fusionClient: VkApi):
         for key_1 in list(self.module_manager.modules):
             module = self.module_manager.modules[key_1]
-            module.run(fusionClient, self)
+            module.run(fusionClient)
 
     def load_params(self):
         if not os.path.isfile(self.module_manager.PARAMS_FILE):
