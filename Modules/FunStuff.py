@@ -1,16 +1,15 @@
-from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEvent
 from vk_api.utils import get_random_id
-import FusionBotMODULES
+from FusionBotMODULES import Fusion, ModuleManager
 
 
-class Module(FusionBotMODULES.ModuleManager.Module):
+class Module(ModuleManager.Module):
     name = "FunStuff"
     description = "Модуль, который добавляет бесполезные, но интересные вещи."
     GUILD_LOCK = []
 
-    def run(self, client: VkApi, module_manager: FusionBotMODULES.ModuleManager):
-        class ShrugCommand(FusionBotMODULES.ModuleManager.Command):
+    def run(self, client: Fusion):
+        class ShrugCommand(ModuleManager.Command):
             name = "shrug"
             description = "¯\_(ツ)_/¯"
 
@@ -22,4 +21,4 @@ class Module(FusionBotMODULES.ModuleManager.Module):
                 )
                 return True
 
-        module_manager.add_command(ShrugCommand(), self)
+        client.module_manager.add_command(ShrugCommand(), self)
