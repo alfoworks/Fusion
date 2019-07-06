@@ -2,8 +2,8 @@ import os
 import FusionBotMODULES
 
 from vk_api.bot_longpoll import VkBotEvent
+from FusionBotMODULES import ModuleManager, Fusion
 from vk_api.utils import get_random_id
-from vk_api.vk_api import VkApi
 from textgenrnn import textgenrnn
 
 logger = FusionBotMODULES.Logger(app="Adisman")
@@ -15,18 +15,18 @@ model_files = {
 }
 
 
-class Module(FusionBotMODULES.ModuleManager.Module):
+class Module(ModuleManager.Module):
     name = "Adisman"
-    description = "Текстовая рекуррентная генерацивная нейронная сеть."
+    description = "Текстовая рекуррентная генеративная нейронная сеть."
 
-    def run(self, client: VkApi, module_manager: FusionBotMODULES.ModuleManager):
-        module_manager.add_param("aiTemp", 0.9)
+    def run(self, client: Fusion):
+        client.module_manager.add_param("aiTemp", 0.9)
         for k in model_files:
             v = model_files[k]
             if not os.path.isfile(v):
                 logger.log(1, "No file %s" % v)
                 logger.log(3, "No model files found. Module will not be loaded.")
-                module_manager.unload_module(self.name)
+                client.module_manager.unload_module(self.name)
                 return
         textgen = textgenrnn(weights_path=model_files["weights_path"], vocab_path=model_files["vocab_path"],
                              config_path=model_files["config_path"])
@@ -40,7 +40,8 @@ class Module(FusionBotMODULES.ModuleManager.Module):
                 prefix = ""
                 if "prefix" in keys:
                     prefix = " ".join(args)
-                ai_text = "".join(textgen.generate(temperature=module_manager.params["aiTemp"], return_as_list=True,
+                ai_text = "".join(textgen.generate(temperature=client.module_manager.params["aiTemp"],
+                                                   return_as_list=True,
                                                    prefix=prefix))
                 client.get_api().messages.send(
                     peer_id=event.obj.peer_id,
@@ -48,4 +49,4 @@ class Module(FusionBotMODULES.ModuleManager.Module):
                     random_id=get_random_id()
                 )
                 return True
-        module_manager.add_command(CommandAI(), self)
+        client.module_manager.add_command(CommandAI(), self)
