@@ -1,3 +1,4 @@
+import pickle
 import time
 import traceback
 import os
@@ -9,7 +10,7 @@ from pyotp import TOTP
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.utils import get_random_id
-from FusionBotMODULES import ModuleManager, Logger
+from FusionBotMODULES import ModuleManager, Logger, BaseModule
 
 ####################################
 
@@ -20,6 +21,33 @@ totp = TOTP(environ.get("fusion_TOTP_key"))
 ####################################
 
 start_time = time.time()
+
+
+class Fusion(VkApi):
+    module_manager = ModuleManager()
+    MODULES_DIR = "Modules"
+    cmd_prefix = "/"
+
+    def load_modules(self):
+        for file in os.listdir(self.MODULES_DIR):
+            if file.endswith(".py"):
+                module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
+                                    fromlist=["Module"]).Module()
+                self.module_manager.add_module(module)
+                self.module_manager.logger.log(2, "Loaded module \"%s\"" % module.name)
+        self.module_manager.add_module(BaseModule())
+
+    def run_modules(self, fusionClient: VkApi):
+        for key_1 in list(self.module_manager.modules):
+            module = self.module_manager.modules[key_1]
+            module.run(fusionClient, self)
+
+    def load_params(self):
+        if not os.path.isfile(self.module_manager.PARAMS_FILE):
+            self.module_manager.save_params()
+        else:
+            with open(self.module_manager.PARAMS_FILE, "rb") as f:
+                self.module_manager.params = pickle.load(f)
 
 
 class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
@@ -36,37 +64,35 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
                 self.logger.log(3, str(err))
 
 
-module_manager: ModuleManager = ModuleManager()
-if not path.isdir(module_manager.MODULES_DIR):
-    os.mkdir(module_manager.MODULES_DIR)
+client: Fusion = Fusion(token=vk_token)
+if not path.isdir(client.MODULES_DIR):
+    os.mkdir(client.MODULES_DIR)
 logger = Logger()
 logger.log(2, "Starting")
-
-client = VkApi(token=vk_token)
 vk_api = client.get_api()
 longpoll = FixedVkBotLongpoll(vk=client, group_id=group_id)
 logger.log(2, "Loading modules")
-module_manager.load_modules()
+client.load_modules()
 logger.log(2, "Loading params")
-module_manager.load_params()
+client.load_params()
 logger.log(2, "Running modules...")
-module_manager.run_modules(client)
+client.run_modules(client)
 print("")
 logger.log(2, "INIT FINISHED! (took %ss)" % math.floor(time.time() - start_time))
-logger.log(2, "Loaded Modules: %s" % len(module_manager.modules))
-logger.log(2, "Loaded Commands: %s" % len(module_manager.commands))
-logger.log(2, "Loaded Params: %s" % len(module_manager.params))
+logger.log(2, "Loaded Modules: %s" % len(client.module_manager.modules))
+logger.log(2, "Loaded Commands: %s" % len(client.module_manager.commands))
+logger.log(2, "Loaded Params: %s" % len(client.module_manager.params))
 print("")
 for event in longpoll.listen():
-    for _, mod in list(module_manager.modules.items()):
+    for _, mod in list(client.module_manager.modules.items()):
         mod.on_event(client, event)
     if event.type == VkBotEventType.MESSAGE_NEW:
-        if not event.obj.text.startswith(module_manager.cmd_prefix):
+        if not event.obj.text.startswith(client.cmd_prefix):
             continue
         logger.log(1, "Обрабатываю команду %s из %s от %s" % (event.obj.text, event.obj.peer_id, event.obj.from_id))
         args = event.obj.text.split()
-        cmd = args.pop(0)[len(module_manager.cmd_prefix):].lower()
-        if cmd not in module_manager.commands:
+        cmd = args.pop(0)[len(client.cmd_prefix):].lower()
+        if cmd not in client.module_manager.commands:
             logger.log(1, "Команда не найдена.")
             vk_api.messages.send(
                 peer_id=event.obj.peer_id,
@@ -74,7 +100,7 @@ for event in longpoll.listen():
                 random_id=get_random_id()
             )
             continue
-        command: ModuleManager.Command = module_manager.commands[cmd]
+        command: ModuleManager.Command = client.module_manager.commands[cmd]
 
         # ARG PARSE #
 
@@ -99,7 +125,7 @@ for event in longpoll.listen():
             if _key == "otp":
                 if totp.verify(value):
                     pass_user = True
-        if not module_manager.check_guild(command.module, event.obj.peer_id):
+        if not client.module_manager.check_guild(command.module, event.obj.peer_id):
             logger.log(1, "Команда недоступна в данном диалоге")
             vk_api.messages.send(
                 peer_id=event.obj.peer_id,
@@ -108,7 +134,7 @@ for event in longpoll.listen():
             )
             continue
         if not pass_user:
-            if not module_manager.has_permissions(command, event.obj.from_id):
+            if not client.module_manager.has_permissions(command, event.obj.from_id):
                 if not command.no_args_pass or args:
                     logger.log(1, "Нет прав.")
                     vk_api.messages.send(
@@ -131,7 +157,7 @@ for event in longpoll.listen():
                 keys_user = []
                 for key in command.keys:
                     keys_user.append("[--%s]" % key)
-                text = "Недостаточно аргументов!\n %s%s %s %s" % (module_manager.cmd_prefix, command.name,
+                text = "Недостаточно аргументов!\n %s%s %s %s" % (client.cmd_prefix, command.name,
                                                                   command.args, " ".join(keys_user))
                 vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                 logger.log(1, "Недостаточно аргументов.")

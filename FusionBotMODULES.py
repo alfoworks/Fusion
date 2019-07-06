@@ -47,16 +47,15 @@ class ModuleManager:
     tasks = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
-    MODULES_DIR = "Modules"
+
     logger = Logger(app="Module Manager")
-    cmd_prefix = "/"
 
     class Module:
         name = "Sample module"
         description = "Sample description"
         GUILD_LOCK = []
 
-        def run(self, api: VkApi, module_manager):
+        def run(self, client: VkApi):
             pass
 
         def on_event(self, api: VkApi, event: VkBotEvent):
@@ -144,32 +143,10 @@ class ModuleManager:
         with open(self.PARAMS_FILE, "wb") as f:
             pickle.dump(self.params, f)
 
-    def load_params(self):
-        if not os.path.isfile(self.PARAMS_FILE):
-            self.save_params()
-        else:
-            with open(self.PARAMS_FILE, "rb") as f:
-                self.params = pickle.load(f)
-
     def add_param(self, key, value_default):
         if key not in self.params:
             self.params[key] = value_default
             self.save_params()
-
-    def load_modules(self):
-        for file in os.listdir(self.MODULES_DIR):
-            if file.endswith(".py"):
-                module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
-                                    fromlist=["Module"]).Module()
-                self.add_module(module)
-                self.logger.log(2, "Loaded module \"%s\"" % module.name)
-
-        self.add_module(BaseModule())
-
-    def run_modules(self, client: VkApi):
-        for key in list(self.modules):
-            mod = self.modules[key]
-            mod.run(client, self)
 
 
 class BaseModule(ModuleManager.Module):
