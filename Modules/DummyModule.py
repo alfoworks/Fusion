@@ -1,10 +1,9 @@
-from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEvent
 from vk_api.utils import get_random_id
-import FusionBotMODULES
+from FusionBotMODULES import Fusion, ModuleManager
 
 
-class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен ОБЯЗАТЕЛЬНО называться Module. В ином случае
+class Module(ModuleManager.Module):  # Класс должен ОБЯЗАТЕЛЬНО называться Module. В ином случае
     # произойдет ошибка и бот не запустится (а с ним и модуль)
     name = "DummyModule"  # Имя модуля
     description = "Хуйня ебаная"  # Описание модуля
@@ -15,7 +14,7 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
     GUILD_LOCK = []
 
     # Основной метод модуля, выполняется в конце инициализации бота (после загрузки параметров и модулей)
-    def run(self, client: VkApi, module_manager: FusionBotMODULES.ModuleManager):
+    def run(self, client: Fusion):
         # client - обьект, через который вы будете отправлять сообщения и делать любую другую работу с вк
         # moduleManager - обьект менеджера модулей. Предоставляет регистры
 
@@ -46,7 +45,7 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
 
             Создание команды:
         """
-        class DummyCommand(FusionBotMODULES.ModuleManager.Command):
+        class DummyCommand(ModuleManager.Command):
             name = "dummy"  # название команды.
             description = "Хуйня ебаная"  # описание
             args = "аргумент1 аргумент2"  # влияет только на вывод в /cmds (для пользователя)
@@ -74,8 +73,8 @@ class Module(FusionBotMODULES.ModuleManager.Module):  # Класс должен 
                 """
                 return True  # если вернуть False, пользователю покажет синтаксис команды
 
-        module_manager.add_command(DummyCommand(), self)  # Регистрация команды
+        client.module_manager.add_command(DummyCommand(), self)  # Регистрация команды
 
     # Данный метод вызывается при ЛЮБОМ событии, которое получает бот через LongPoll.
-    def on_event(self, client: VkApi, event: VkBotEvent):
+    def on_event(self, client: Fusion, event: VkBotEvent):
         pass
