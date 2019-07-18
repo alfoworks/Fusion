@@ -56,7 +56,11 @@ logger.log(2, "Loaded Params: %s" % len(client.module_manager.params))
 print("")
 for event in longpoll.listen():
     for _, mod in list(client.module_manager.modules.items()):
-        mod.on_event(client, event)
+        try:
+            mod.on_event(client, event)
+        except Exception as e:
+            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
+            logger.log(4, str(e))
     if event.type == VkBotEventType.MESSAGE_NEW:
         if not event.obj.text.startswith(client.cmd_prefix):
             continue
