@@ -10,7 +10,7 @@ from pyotp import TOTP
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll, VkBotEvent, DotDict
 from vk_api.utils import get_random_id
 from FusionBotMODULES import ModuleManager, Logger, Fusion
-
+from termcolor import colored
 ####################################
 
 vk_token = environ.get("fusion_token")
@@ -18,7 +18,7 @@ group_id = environ.get("fusion_id")
 totp = TOTP(environ.get("fusion_TOTP_key"))
 args_regex = re.compile(r"(.*?)=(.+)")
 start_time = time.time()
-
+api_version = "5.101"
 
 ####################################
 
@@ -66,11 +66,13 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
                 self.logger.log(3, str(err))
 
 
-client: Fusion = Fusion(token=vk_token)
+client: Fusion = Fusion(token=vk_token, api_version=api_version)
 if not path.isdir(client.MODULES_DIR):
     os.mkdir(client.MODULES_DIR)
 logger = Logger()
-logger.log(2, "Starting")
+logger.log(2, "Starting %s bot with %s %s" % (colored("Fusion", "magenta"),
+                                               colored("VK Bot API", "blue"),
+                                               colored("v" + api_version, "green")))
 vk_api = client.get_api()
 longpoll = FixedVkBotLongpoll(vk=client, group_id=group_id)
 logger.log(2, "Loading modules")
@@ -88,6 +90,13 @@ print("")
 
 for event in longpoll.listen():
     process_mentions(event)
+    print(event)
+    for _, mod in list(client.module_manager.modules.items()):
+        try:
+            mod.on_event(client, event)
+        except Exception as e:
+            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
+            logger.log(4, str(e))
     if event.type == VkBotEventType.MESSAGE_NEW:
         if not event.obj.text.startswith(client.cmd_prefix):
             continue
@@ -151,9 +160,3 @@ for event in longpoll.listen():
                                                                   command.args, " ".join(keys_user))
                 vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                 logger.log(1, "Недостаточно аргументов.")
-    for _, mod in list(client.module_manager.modules.items()):
-        try:
-            mod.on_event(client, event)
-        except Exception as e:
-            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
-            logger.log(4, str(e))

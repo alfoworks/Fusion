@@ -21,7 +21,7 @@ class Logger:
         ["Info", "green", None, None],
         ["Warn", "yellow", None, None],
         ["Error", "red", None, None],
-        ["FATAL", "red", None, None],
+        ["FATAL", "black", "red", None],
         ["Silent", None, None, None],
     ]
 
@@ -62,7 +62,7 @@ class ModuleManager:
         def run(self, client: VkApi):
             pass
 
-        def on_event(self, api: VkApi, event: VkBotEvent):
+        def on_event(self, client: VkApi, event: VkBotEvent):
             pass
 
     class Command:
@@ -162,9 +162,14 @@ class Fusion(VkApi):
         for file in os.listdir(self.MODULES_DIR):
             if file.endswith(".py"):
                 module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
-                                    fromlist=["Module"]).Module()
-                self.module_manager.add_module(module)
-                self.module_manager.logger.log(2, "Loaded module \"%s\"" % module.name)
+                                    fromlist=["Module"])
+                instance = module.Module()
+                do_load = True
+                if hasattr(module, "load_module"):
+                    do_load = module.load_module
+                if do_load and hasattr(module, "Module"):
+                    self.module_manager.add_module(instance)
+                    self.module_manager.logger.log(2, "Loaded module \"%s\"" % instance.name)
         self.module_manager.add_module(BaseModule())
 
     def run_modules(self, fusionClient: VkApi):
