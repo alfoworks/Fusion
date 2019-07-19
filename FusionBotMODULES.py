@@ -322,32 +322,29 @@ class BaseModule(ModuleManager.Module):
             permissions = ["administrator"]
 
             def run(self, event: VkBotEvent, args, keys):
-                user_id = re.search(r'.*\[id(\d+)|.+\].*', " ".join(args))
-                # text: str
-                if user_id:
-                    user_id = user_id.group(1)
-                else:
+                if not event.obj.mentions:
                     return False
-                if not args[1]:
-                    return False
+                text: str = ""
                 if args[0] == "add":
-                    if user_id not in client.module_manager.params["permissions"]:
-                        client.module_manager.params["permissions"][user_id] = []
-                    if args[1] not in client.module_manager.params["permissions"][user_id]:
-                        client.module_manager.params["permissions"][user_id].append(args[1])
-                        text = "Успешно добавлено разрешение %s пользователю с id %s." % (args[1], user_id)
-                    else:
-                        text = "У пользователя с id %s уже есть разрешение %s." % (user_id, args[1])
-                elif args[0] == "remove":
-                    if user_id in client.module_manager.params["permissions"]:
-                        try:
-                            client.module_manager.params["permissions"][user_id].remove(args[1])
-                        except ValueError:
-                            text = "У данного пользователя нет такого разрешения."
+                    for user_id in event.obj.mentions.keys():
+                        if user_id not in client.module_manager.params["permissions"]:
+                            client.module_manager.params["permissions"][user_id] = []
+                        if args[1] not in client.module_manager.params["permissions"][user_id]:
+                            client.module_manager.params["permissions"][user_id].append(args[1])
+                            text += "Успешно добавлено разрешение %s пользователю с id %s.\n" % (args[1], user_id)
                         else:
-                            text = "Успешно удалено разрешение %s у пользователя с id %s." % (args[1], user_id)
-                    else:
-                        text = "У данного пользователя нет ни одного разрешения."
+                            text += "У пользователя с id %s уже есть разрешение %s.\n" % (user_id, args[1])
+                elif args[0] == "remove":
+                    for user_id in event.obj.mentions.keys():
+                        if user_id in client.module_manager.params["permissions"]:
+                            try:
+                                client.module_manager.params["permissions"][user_id].remove(args[1])
+                            except ValueError:
+                                text += "У данного пользователя нет такого разрешения.\n"
+                            else:
+                                text += "Успешно удалено разрешение %s у пользователя с id %s.\n" % (args[1], user_id)
+                        else:
+                            text += "У пользователя %s нет ни одного разрешения.\n" % user_id
                 else:
                     return False
                 client.get_api().messages.send(

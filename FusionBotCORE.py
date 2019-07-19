@@ -28,7 +28,7 @@ def process_mentions(_event_0: VkBotEvent):
         _event_0.obj.mentions = {}
         _event_0.obj.raw_text = _event_0.obj.text
         for (user_id, mention_name) in client.module_manager.mention_regex.findall(_event_0.obj.text):
-            _event_0.obj["mentions"][user_id] = mention_name
+            _event_0.obj.mentions[user_id] = mention_name
         _event_0.obj.text = client.module_manager.mention_regex.sub(r"<@\1>", _event_0.obj.text)
 
 
