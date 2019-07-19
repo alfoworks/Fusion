@@ -302,6 +302,11 @@ class BaseModule(ModuleManager.Module):
                         )
                     client.module_manager.params[args[1]] = val
                     client.module_manager.save_params()
+                    client.get_api().messages.send(
+                        peer_id=event.obj.peer_id,
+                        message="Параметры изменены и сохранены.",
+                        random_id=get_random_id()
+                    )
                     return True
                 text = "Список параметров:\n\n"
                 for k, v in client.module_manager.params.items():
