@@ -1,3 +1,4 @@
+import re
 import time
 import traceback
 import os
@@ -6,7 +7,7 @@ import math
 from os import path, environ
 from requests import ReadTimeout
 from pyotp import TOTP
-from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
+from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll, VkBotEvent, DotDict
 from vk_api.utils import get_random_id
 from FusionBotMODULES import ModuleManager, Logger, Fusion
 
@@ -19,6 +20,38 @@ totp = TOTP(environ.get("fusion_TOTP_key"))
 ####################################
 
 start_time = time.time()
+
+
+def process_mentions(_event_0: VkBotEvent):
+    if _event_0.type in [VkBotEventType.MESSAGE_NEW, VkBotEventType.MESSAGE_EDIT, VkBotEventType.MESSAGE_REPLY]:
+        _event_0.obj.mentions = {}
+        _event_0.obj.raw_text = _event_0.obj.text
+        for (user_id, mention_name) in client.module_manager.mention_regex.findall():
+            _event_0.obj["mentions"][user_id] = mention_name
+        _event_0.obj.text = client.module_manager.mention_regex.sub(r"<@\1>", _event_0.obj.text)
+
+
+args_regex = re.compile(r"(.*?)=(.+)")
+
+
+def parse(raw):
+    _args_0 = []
+    _keys_0 = DotDict({})
+    for elem in raw:
+        if elem.startswith("—"):
+            elem = elem[1:]
+            _key_0, _value_0 = elem, True
+            if ~elem.find("="):
+                res = args_regex.search(elem)
+                _key_0 = res.group(1)
+                _value_0 = res.group(2)
+            _keys_0[_key_0] = _value_0
+        elif elem.startswith("-"):
+            for char in elem[1:]:
+                _keys_0[char] = True
+        else:
+            _args_0.append(elem)
+    return _args_0, _keys_0
 
 
 class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
@@ -54,13 +87,9 @@ logger.log(2, "Loaded Modules: %s" % len(client.module_manager.modules))
 logger.log(2, "Loaded Commands: %s" % len(client.module_manager.commands))
 logger.log(2, "Loaded Params: %s" % len(client.module_manager.params))
 print("")
+
 for event in longpoll.listen():
-    for _, mod in list(client.module_manager.modules.items()):
-        try:
-            mod.on_event(client, event)
-        except Exception as e:
-            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
-            logger.log(4, str(e))
+    print(event)
     if event.type == VkBotEventType.MESSAGE_NEW:
         if not event.obj.text.startswith(client.cmd_prefix):
             continue
@@ -77,7 +106,7 @@ for event in longpoll.listen():
             continue
         command: ModuleManager.Command = client.module_manager.commands[cmd]
 
-        # ARG PARSE #
+        # ARGUMENTS PARSE #
 
         keys = []
         for arg in args:
@@ -136,3 +165,9 @@ for event in longpoll.listen():
                                                                   command.args, " ".join(keys_user))
                 vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                 logger.log(1, "Недостаточно аргументов.")
+    for _, mod in list(client.module_manager.modules.items()):
+        try:
+            mod.on_event(client, event)
+        except Exception as e:
+            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
+            logger.log(4, str(e))

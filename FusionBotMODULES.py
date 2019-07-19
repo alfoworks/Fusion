@@ -8,6 +8,9 @@ from vk_api import VkApi
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotEvent
 
+_native_mention_regex_0 = r"\[id(\d+)\|(.*?)\]"
+_mention_regex = r"<@(\d+)>"
+
 
 class Logger:
     thread = "Main"
@@ -47,7 +50,8 @@ class ModuleManager:
     tasks = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
-
+    mention_regex = re.compile(_native_mention_regex_0)
+    bot_mention_regex = re.compile(_mention_regex)
     logger = Logger(app="Module Manager")
 
     class Module:
@@ -179,6 +183,7 @@ class Fusion(VkApi):
 class BaseModule(ModuleManager.Module):
     name = "BaseModule"
     description = "Встроенный модуль с базовыми функциями"
+
     @staticmethod
     def parse_value(value, value_type):
         if value_type == int:
