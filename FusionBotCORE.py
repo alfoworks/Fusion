@@ -16,22 +16,20 @@ from FusionBotMODULES import ModuleManager, Logger, Fusion
 vk_token = environ.get("fusion_token")
 group_id = environ.get("fusion_id")
 totp = TOTP(environ.get("fusion_TOTP_key"))
+args_regex = re.compile(r"(.*?)=(.+)")
+start_time = time.time()
+
 
 ####################################
-
-start_time = time.time()
 
 
 def process_mentions(_event_0: VkBotEvent):
     if _event_0.type in [VkBotEventType.MESSAGE_NEW, VkBotEventType.MESSAGE_EDIT, VkBotEventType.MESSAGE_REPLY]:
         _event_0.obj.mentions = {}
         _event_0.obj.raw_text = _event_0.obj.text
-        for (user_id, mention_name) in client.module_manager.mention_regex.findall():
+        for (user_id, mention_name) in client.module_manager.mention_regex.findall(_event_0.obj.text):
             _event_0.obj["mentions"][user_id] = mention_name
         _event_0.obj.text = client.module_manager.mention_regex.sub(r"<@\1>", _event_0.obj.text)
-
-
-args_regex = re.compile(r"(.*?)=(.+)")
 
 
 def parse(raw):
@@ -89,7 +87,7 @@ logger.log(2, "Loaded Params: %s" % len(client.module_manager.params))
 print("")
 
 for event in longpoll.listen():
-    print(event)
+    process_mentions(event)
     if event.type == VkBotEventType.MESSAGE_NEW:
         if not event.obj.text.startswith(client.cmd_prefix):
             continue
@@ -106,29 +104,6 @@ for event in longpoll.listen():
             continue
         command: ModuleManager.Command = client.module_manager.commands[cmd]
 
-        # ARGUMENTS PARSE #
-
-        keys = []
-        for arg in args:
-            if arg.startswith("—") and len(arg) > 2 and arg not in keys:  # вк заменяет -- на —. Фикс не повлияет на UX
-                keys.append(arg)
-        otp_pwd_index = None
-        for i, key in enumerate(keys):
-            args.remove(key)
-            keys[i] = key[1:]
-            if "otp" in keys[i]:
-                otp_pwd_index = i
-
-        # ========= #
-
-        pass_user = False
-        if otp_pwd_index is not None:
-            key: str = keys[otp_pwd_index]
-            del keys[otp_pwd_index]
-            [_key, value] = key.split("=")
-            if _key == "otp":
-                if totp.verify(value):
-                    pass_user = True
         if not client.module_manager.check_guild(command.module, event.obj.peer_id):
             logger.log(1, "Команда недоступна в данном диалоге")
             vk_api.messages.send(
@@ -137,16 +112,27 @@ for event in longpoll.listen():
                 random_id=get_random_id()
             )
             continue
-        if not pass_user:
-            if not client.module_manager.has_permissions(command, event.obj.from_id):
-                if not command.no_args_pass or args:
-                    logger.log(1, "Нет прав.")
-                    vk_api.messages.send(
-                        peer_id=event.obj.peer_id,
-                        message="У вас недостаточно прав для выполнения данной команды.",
-                        random_id=get_random_id()
-                    )
-                    continue
+
+        args, keys = parse(args)
+
+        pass_user = False
+        try:
+            otp_key = str(keys["otp"])
+        except KeyError:
+            pass
+        else:
+            if totp.verify(otp_key):
+                pass_user = True
+
+        if not pass_user and not client.module_manager.has_permissions(command, event.obj.from_id) and \
+                (not command.no_args_pass or args):
+            logger.log(1, "Нет прав.")
+            vk_api.messages.send(
+                peer_id=event.obj.peer_id,
+                message="У вас недостаточно прав для выполнения данной команды.",
+                random_id=get_random_id()
+            )
+            continue
         try:
             ok = command.run(event, args, keys)
         except Exception as e:
