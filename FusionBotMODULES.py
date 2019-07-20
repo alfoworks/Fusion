@@ -48,6 +48,11 @@ class Logger:
             self.raw_log(level, line)
 
 
+class AccessDeniedException(Exception):
+    def __init__(self):
+        super().__init__("AccessDenied")
+
+
 class ModuleManager:
     modules = dict()
     params = dict()
@@ -179,10 +184,10 @@ class Fusion(VkApi):
                     self.module_manager.logger.log(2, "Loaded module \"%s\"" % instance.name)
         self.module_manager.add_module(BaseModule())
 
-    def run_modules(self, fusionClient: VkApi):
+    def run_modules(self):  # fusionClient: VkApi):
         for key_1 in list(self.module_manager.modules):
             module = self.module_manager.modules[key_1]
-            module.run(fusionClient)
+            module.run(self)  # fusionClient)
 
     def load_params(self):
         if not os.path.isfile(self.module_manager.PARAMS_FILE):
@@ -222,6 +227,8 @@ class BaseModule(ModuleManager.Module):
 
             def run(self, event: VkBotEvent, args, keys):
                 if "reload" in keys:
+                    if not client.module_manager.has_permission("administrator", event.obj.from_id):
+                        raise AccessDeniedException()
                     client.get_api().messages.send(
                         peer_id=event.obj.peer_id,
                         message="Перезагрузка модулей..",
@@ -231,7 +238,7 @@ class BaseModule(ModuleManager.Module):
                     for name, _ in list(client.module_manager.modules.items()):
                         client.module_manager.unload_module(name)
                     client.load_modules()
-                    client.run_modules(client)
+                    client.run_modules()  # client)
                     client.get_api().messages.send(
                         peer_id=event.obj.peer_id,
                         message="Модули перезагружены.",
