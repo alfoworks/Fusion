@@ -69,6 +69,9 @@ class ModuleManager:
         def on_event(self, client: VkApi, event: VkBotEvent):
             pass
 
+        def on_payload(self, client: VkApi, event: VkBotEvent):
+            pass
+
     class Command:
         name = "sample_command"
         description = "Sample description"
