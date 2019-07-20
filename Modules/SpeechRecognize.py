@@ -15,7 +15,7 @@ def find_audio_in_fwd_messages(msg):
             return msg.attachments[0]
     if "reply_message" in msg:
         return find_audio_in_fwd_messages(DotDict(msg.reply_message))
-    if msg.fwd_messages:
+    elif msg.fwd_messages:
         for message in msg.fwd_messages:
             res = find_audio_in_fwd_messages(DotDict(message))
             if res:
