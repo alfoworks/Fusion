@@ -7,6 +7,7 @@ from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 from wit import Wit, BadRequestError
 
+
 class Module(ModuleManager.Module):
     name = "SpeechRecognize"
     description = "Модуль распознавания голосовых сообщений"
@@ -19,10 +20,11 @@ class Module(ModuleManager.Module):
     def on_event(self, client: Fusion, event: VkBotEvent):
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg = event.obj
-            if msg.reply_message:
-                msg = DotDict(msg.reply_message)
-            elif msg.fwd_messages:
-                msg = DotDict(msg.fwd_messages[0])
+            while msg.reply_message or msg.fwd_messages:
+                if "reply_message" in msg:
+                    msg = DotDict(msg.reply_message)
+                elif msg.fwd_messages:
+                    msg = DotDict(msg.fwd_messages[0])
             if msg.attachments:
                 attachment = msg.attachments[0]
                 if attachment["type"] == "audio_message":
