@@ -103,7 +103,7 @@ for event in longpoll.listen():
             logger.log(4, traceback.format_exc())
     if event.type == VkBotEventType.MESSAGE_NEW:
         if "payload" in event.obj:
-            logger.log(1, "Получен payload: %s " % event.obj.payload)
+            logger.log(1, "Получен payload из %s от %s: %s" % (event.obj.peer_id, event.obj.from_id, event.obj.payload))
             payload = {}
             try:
                 payload = json.loads(event.obj.payload)
