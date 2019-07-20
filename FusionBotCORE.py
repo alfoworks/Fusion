@@ -1,7 +1,10 @@
+import json
 import re
 import time
 import traceback
 import os
+from json import JSONDecodeError
+
 import math
 
 from os import path, environ
@@ -99,7 +102,17 @@ for event in longpoll.listen():
             logger.log(4, "Exception in module %s: %s" % (mod.name, type(e).__name__))
             logger.log(4, traceback.format_exc())
     if event.type == VkBotEventType.MESSAGE_NEW:
-        if event.obj.text.startswith(client.cmd_prefix):
+        if "payload" in event.obj:
+            payload = {}
+            try:
+                payload = json.loads(event.obj.payload)
+            except JSONDecodeError:
+                continue
+            if "module" in payload and payload["module"] in client.module_manager.modules:
+                mod = client.module_manager.modules[payload["module"]]
+                mod.on_payload(client, event, payload["payload"])
+
+        elif event.obj.text.startswith(client.cmd_prefix):
             logger.log(1, "Обрабатываю команду %s из %s от %s" % (event.obj.text, event.obj.peer_id, event.obj.from_id))
             args = event.obj.text.split()
             cmd = args.pop(0)[len(client.cmd_prefix):].lower()

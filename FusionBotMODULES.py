@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import pickle
 import re
@@ -74,7 +75,7 @@ class ModuleManager:
         def on_event(self, client: VkApi, event: VkBotEvent):
             pass
 
-        def on_payload(self, client: VkApi, event: VkBotEvent):
+        def on_payload(self, client: VkApi, event: VkBotEvent, payload):
             pass
 
     class Command:
@@ -195,6 +196,13 @@ class Fusion(VkApi):
         else:
             with open(self.module_manager.PARAMS_FILE, "rb") as f:
                 self.module_manager.params = pickle.load(f)
+
+    @staticmethod
+    def create_payload(module: ModuleManager.Module, payload):
+        return json.dumps({
+            "module": module.name,
+            "payload": payload,
+        })
 
 
 class BaseModule(ModuleManager.Module):
