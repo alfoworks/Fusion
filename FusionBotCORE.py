@@ -90,7 +90,6 @@ print("")
 
 for event in longpoll.listen():
     process_mentions(event)
-    print(event)
     for _, mod in list(client.module_manager.modules.items()):
         try:
             mod.on_event(client, event)
