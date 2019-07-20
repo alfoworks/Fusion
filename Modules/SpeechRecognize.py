@@ -2,11 +2,10 @@ import os
 from os import path
 
 import requests
-from vk_api.bot_longpoll import VkBotEvent, VkBotEventType
+from vk_api.bot_longpoll import VkBotEvent, VkBotEventType, DotDict
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 from wit import Wit, BadRequestError
-
 
 class Module(ModuleManager.Module):
     name = "SpeechRecognize"
@@ -19,30 +18,23 @@ class Module(ModuleManager.Module):
 
     def on_event(self, client: Fusion, event: VkBotEvent):
         if event.type == VkBotEventType.MESSAGE_NEW:
-            if event.obj.attachments:
-                attachment = event.obj.attachments[0]
+            msg = event.obj
+            if msg.reply_message:
+                msg = DotDict(msg.reply_message)
+            elif msg.fwd_messages:
+                msg = DotDict(msg.fwd_messages[0])
+            if msg.attachments:
+                attachment = msg.attachments[0]
                 if attachment["type"] == "audio_message":
                     url = attachment["audio_message"]["link_mp3"]
                     res = requests.get(url, allow_redirects=True)
-                    file_name = "voice_messages/%s_%s_%s_%s.mp3" % (
-                        event.obj.peer_id,
-                        event.obj.from_id,
-                        event.obj.conversation_message_id,
-                        event.obj.date,
-                    )
-                    if not path.isdir("voice_messages"):
-                        os.mkdir("voice_messages")
-                    open(file_name, 'wb').write(res.content)
-                    text = ""
                     try:
-                        with open(file_name, "rb") as f:
-                            resp = self.wit.post_speech(f, "mpeg")
-                            f.close()
-                            text = "Распознано голосовое сообщение:\n\n%s" % resp["_text"]
+                        resp = self.wit.post_speech(res.content, "mpeg")
+                        text = "Распознано голосовое сообщение:\n\n%s" % resp["_text"]
                     except BadRequestError as e:
                         text = "Произошла ошибка при распознавании.\n\n%s\n\nЧаще всего это происходит по вине " \
                                "пользователя." % str(e),
-                    os.remove(file_name)
+
                     client.get_api().messages.send(
                         message=text,
                         peer_id=event.obj.peer_id,

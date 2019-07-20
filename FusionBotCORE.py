@@ -176,7 +176,8 @@ for event in longpoll.listen():
                     keys_user = []
                     for key in command.keys:
                         keys_user.append("[--%s]" % key)
-                    text = "Недостаточно аргументов!\n %s%s %s %s" % (client.cmd_prefix, command.name,
-                                                                      command.args, " ".join(keys_user))
+                    text = "Недостаточно аргументов!\n %s%s %s %s\n - %s" % (client.cmd_prefix, command.name,
+                                                                             command.args, " ".join(keys_user),
+                                                                             command.description)
                     vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                     logger.log(1, "Недостаточно аргументов.")
