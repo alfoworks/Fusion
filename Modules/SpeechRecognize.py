@@ -5,7 +5,7 @@ import requests
 from vk_api.bot_longpoll import VkBotEvent, VkBotEventType
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
-from wit import Wit
+from wit import Wit, BadRequestError
 
 
 class Module(ModuleManager.Module):
@@ -33,12 +33,18 @@ class Module(ModuleManager.Module):
                     if not path.isdir("voice_messages"):
                         os.mkdir("voice_messages")
                     open(file_name, 'wb').write(res.content)
-                    resp = None
-                    with open(file_name, "rb") as f:
-                        resp = self.wit.post_speech(f.read(), "mpeg")
+                    text = ""
+                    try:
+                        with open(file_name, "rb") as f:
+                            resp = self.wit.post_speech(f, "mpeg")
+                            f.close()
+                            text = "Распознано голосовое сообщение:\n\n%s" % resp["_text"]
+                    except BadRequestError as e:
+                        text = "Произошла ошибка при распознавании.\n\n%s\n\nЧаще всего это происходит по вине " \
+                               "пользователя." % str(e),
                     os.remove(file_name)
                     client.get_api().messages.send(
-                        message="Распознано голосовое сообщение:\n\n%s" % resp["_text"],
+                        message=text,
                         peer_id=event.obj.peer_id,
                         random_id=get_random_id(),
                         reply_to=event.obj.id,

@@ -94,8 +94,8 @@ for event in longpoll.listen():
         try:
             mod.on_event(client, event)
         except Exception as e:
-            logger.log(4, "Exception in module %s: %s" % (mod.name, ". ".join(list(e.args))))
-            logger.log(4, str(e))
+            logger.log(4, "Exception in module %s: %s" % (mod.name, type(e).__name__))
+            logger.log(4, traceback.format_exc())
     if event.type == VkBotEventType.MESSAGE_NEW:
         if not event.obj.text.startswith(client.cmd_prefix):
             continue

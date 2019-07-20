@@ -12,7 +12,7 @@ class Module(ModuleManager.Module):
     def run(self, client: Fusion):
         class KeyboardCommand(ModuleManager.Command):
             name = "keytest"
-            description = "¯\_(ツ)_/¯"
+            description = "Тестирование клавиатуры вк"
 
             def run(self, event: VkBotEvent, args, keys):
                 keyboard: VkKeyboard = VkKeyboard(one_time=True)

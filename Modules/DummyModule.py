@@ -2,6 +2,9 @@ from vk_api.bot_longpoll import VkBotEvent
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 
+load_module = False  # Если False - модуль не загрузится. Если переменная не сущетсвует или установлена на True,
+# то модуль загрузится
+
 
 class Module(ModuleManager.Module):  # Класс должен ОБЯЗАТЕЛЬНО называться Module. В ином случае
     # произойдет ошибка и бот не запустится (а с ним и модуль)

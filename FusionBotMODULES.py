@@ -34,7 +34,7 @@ class Logger:
         self.thread = thread
         self.app = app
 
-    def log(self, level: int, text: str):
+    def raw_log(self, level: int, text: str):
         log_level = self.log_levels[level]
         print("[%s] [%s] [%s]: %s" % (
             colored(self.get_time(), "magenta"),
@@ -42,6 +42,10 @@ class Logger:
             self.app,
             text
         ))
+
+    def log(self, level: int, text: str):
+        for line in text.splitlines():
+            self.raw_log(level, line)
 
 
 class ModuleManager:
