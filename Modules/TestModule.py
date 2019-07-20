@@ -22,9 +22,7 @@ class Module(ModuleManager.Module):
                 keyboard.add_button(label="Test2", color=VkKeyboardColor.DEFAULT,
                                     payload=client.create_payload(
                                         self.module,
-                                        {
-                                            "test2"
-                                        }
+                                        "test2"
                                     )
                                     )
                 client.get_api().messages.send(keyboard=keyboard.get_keyboard(),
