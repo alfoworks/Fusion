@@ -1,6 +1,5 @@
 import json
 import os
-from os import path
 
 import requests
 from vk_api.bot_longpoll import VkBotEvent, VkBotEventType, DotDict
@@ -40,7 +39,6 @@ class Module(ModuleManager.Module):
 
     def run(self, client: Fusion):
         self.wit = Wit(os.getenv("fusion_wit_token"))
-        wit = self.wit
 
         class RecognizeCommand(ModuleManager.Command):
             name = "recognize"
@@ -52,7 +50,7 @@ class Module(ModuleManager.Module):
                 audio_attachment = find_audio_in_fwd_messages(event.obj)
                 if not audio_attachment:
                     return False
-                res = recognize_audio(audio_attachment, wit)
+                res = recognize_audio(audio_attachment, self.module.wit)
                 text = None
                 if type(res) == dict:
                     error = res
