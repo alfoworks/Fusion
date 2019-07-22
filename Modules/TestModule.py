@@ -31,7 +31,6 @@ class Module(ModuleManager.Module):
 
     def run(self, client: Fusion):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
-        self.dialogflow_token = os.getenv("fusion_dialogflow_token")
 
         class KeyboardCommand(ModuleManager.Command):
             name = "keytest"
@@ -50,20 +49,7 @@ class Module(ModuleManager.Module):
                                                )
                 return True
 
-        class DialogflowTestCommand(ModuleManager.Command):
-            name = "df"
-            description = "Тестирование dialogflow"
-
-            def run(self, event: VkBotEvent, args, keys):
-                response_json = process_natural_language(" ".join(args), self.module.dialogflow_token)
-                client.get_api().messages.send(peer_id=event.obj.peer_id,
-                                               random_id=get_random_id(),
-                                               message=response_json['result']['fulfillment']['speech'],
-                                               )
-                return True
-
         client.module_manager.add_command(KeyboardCommand(), self)
-        client.module_manager.add_command(DialogflowTestCommand(), self)
 
     def on_payload(self, client: Fusion, event: VkBotEvent, payload):
         client.get_api().messages.send(peer_id=event.obj.peer_id,
