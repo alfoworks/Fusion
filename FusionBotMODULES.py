@@ -3,6 +3,8 @@ import json
 import os
 import pickle
 import re
+import traceback
+
 from termcolor import colored
 from datetime import datetime
 from vk_api import VkApi
@@ -22,7 +24,7 @@ class Logger:
         ["Info", "green", None, None],
         ["Warn", "yellow", None, None],
         ["Error", "red", None, None],
-        ["FATAL", "black", "red", None],
+        ["FATAL", "grey", "on_red", None],
         ["Silent", None, None, None],
     ]
 
@@ -37,12 +39,15 @@ class Logger:
 
     def raw_log(self, level: int, text: str):
         log_level = self.log_levels[level]
-        print("[%s] [%s] [%s]: %s" % (
+        _text = "[%s] [%s] [%s]: " % (
             colored(self.get_time(), "magenta"),
             colored(self.thread + " thread/" + log_level[0], log_level[1], log_level[2], log_level[3]),
-            self.app,
-            text
-        ))
+            self.app)
+        if level == 5:
+            _text += colored(text, "red")
+        else:
+            _text += text
+        print(_text)
 
     def log(self, level: int, text: str):
         for line in text.splitlines():
@@ -188,7 +193,12 @@ class Fusion(VkApi):
     def run_modules(self):
         for key_1 in list(self.module_manager.modules):
             module = self.module_manager.modules[key_1]
-            module.run(self)
+            self.module_manager.logger.log(2, "Running module %s" % module.name)
+            try:
+                module.run(self)
+            except Exception as e:
+                self.module_manager.logger.log(5, traceback.format_exc())
+                exit(1)
 
     def load_params(self):
         if not os.path.isfile(self.module_manager.PARAMS_FILE):

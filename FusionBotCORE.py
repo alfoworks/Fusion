@@ -85,7 +85,7 @@ client.load_modules()
 logger.log(2, "Loading params")
 client.load_params()
 logger.log(2, "Running modules...")
-client.run_modules()  # client)
+client.run_modules()
 print("")
 logger.log(2, "INIT FINISHED! (took %ss)" % math.floor(time.time() - start_time))
 logger.log(2, "Loaded Modules: %s" % len(client.module_manager.modules))
@@ -111,7 +111,11 @@ for event in longpoll.listen():
                 continue
             if "module" in payload and payload["module"] in client.module_manager.modules:
                 mod = client.module_manager.modules[payload["module"]]
-                mod.on_payload(client, event, payload["payload"])
+                try:
+                    mod.on_payload(client, event, payload["payload"])
+                except Exception as e:
+                    logger.log(4, "Exception in module %s: %s" % (mod.name, type(e).__name__))
+                    logger.log(4, traceback.format_exc())
 
         elif event.obj.text.startswith(client.cmd_prefix):
             logger.log(1, "Обрабатываю команду %s из %s от %s" % (event.obj.text, event.obj.peer_id, event.obj.from_id))

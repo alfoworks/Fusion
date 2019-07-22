@@ -7,54 +7,39 @@ from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 
 
-def render_keyboard(key_list, defined_keys, page=0):
-    if defined_keys is None:
-        defined_keys = []
-    keys_len = len(key_list)
-    start_index = (page - 1) * 36
-    end_index = start_index + 35
-    if keys_len < start_index:
+def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, submit=False):
+    start_index = page * (rows * columns)
+    end_index = start_index + (rows * columns)
+    if len(key_list) < start_index:
         return "[]"
-    elif keys_len < end_index:
-        end_index = keys_len - 1
-    keyboard: VkKeyboard = VkKeyboard(one_time=True)
+    elif len(key_list) < end_index:
+        end_index = len(key_list)
+    keyboard: VkKeyboard = VkKeyboard(one_time=one_time)
     keyboard.lines.pop()
-    for index, button in enumerate(key_list):
-        if start_index <= index <= end_index:
-            if index % 4 == 0:
-                keyboard.add_line()
-            keyboard.add_button(**button)
+    for index in range(start_index, end_index):
+        if index % 4 == 0:
+            keyboard.add_line()
+        keyboard.add_button(**key_list[index])
     keyboard.add_line()
-    for button in defined_keys:
-        keyboard.add_button(**button)
-    return json.dumps(keyboard.keyboard)
+    if page != 0:
+        keyboard.add_button("<< Пред.", payload=Fusion.create_payload({
+            "act": "next_page",
+            "page": page - 1,
+        }, module))
+    keyboard.add_button("Отмена", color=VkKeyboardColor.NEGATIVE, payload=Fusion.create_payload({
+        "act": "cancel",
+    }, module))
+    if not submit:
+        keyboard.add_button("Отправить", color=VkKeyboardColor.POSITIVE, payload=Fusion.create_payload({
+            "act": "submit",
+        }, module))
+    if len(key_list) > end_index:
+        keyboard.add_button("След. >>", payload=Fusion.create_payload({
+            "act": "next_page",
+            "page": page + 1,
+        }, module))
+    return keyboard.get_keyboard()
 
-
-def send_keyboard(client, module, event, page=1):
-    keys = []
-    for item in range(70):
-        keys.append({
-            "label": "Кнопка %s" % item,
-            "payload": client.create_payload("button%s" % item, module),
-        })
-    defined_keys = [
-        {
-            "label": "Отмена",
-        },
-        {
-            "label": "Следующая страница",
-            "payload": client.create_payload({
-                "act": "next_page",
-                "page": page+1
-            }, module)
-        }
-    ]
-    rendered = render_keyboard(keys, defined_keys=defined_keys, page=page)
-    client.get_api().messages.send(keyboard=rendered,
-                                   peer_id=event.obj.peer_id,
-                                   random_id=get_random_id(),
-                                   message="Тест клавиатуры"
-                                   )
 
 class Module(ModuleManager.Module):
     name = "TestModule"
@@ -62,26 +47,53 @@ class Module(ModuleManager.Module):
     GUILD_LOCK = []
     # wit = None
     dialogflow_token = None
+    keys = []
 
     def run(self, client: Fusion):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
+
+        self.keys = []
+        for elem in range(72):
+            self.keys.append({
+                "label": "Кнопка%s" % elem,
+                "payload": client.create_payload("button%s" % elem, self)
+            })
 
         class KeyboardCommand(ModuleManager.Command):
             name = "keytest"
             description = "Тестирование клавиатуры вк"
 
             def run(self, event: VkBotEvent, args, keys):
-                send_keyboard(client, self.module, event)
+                client.get_api().messages.send(
+                    keyboard=render_keyboard(
+                        self.module.keys, self.module,
+                    ),
+                    peer_id=event.obj.peer_id,
+                    random_id=get_random_id(),
+                    message="Тест клавиатуры"
+                )
+
                 return True
 
         client.module_manager.add_command(KeyboardCommand(), self)
+
+        class ReplyTestCommand(ModuleManager.Command):
+            name = "replytest"
+            description = "Тестирование ответа на сообщение"
+
+            def run(self, event: VkBotEvent, args, keys):
+                client.get_api().messages.send(
+                    message="1234",
+                    reply_to=event.obj.id,
+                    random_id=get_random_id(),
+                    peer_id=event.obj.peer_id
+                )
+                return True
+
+        client.module_manager.add_command(ReplyTestCommand(), self)
 
     def on_payload(self, client: Fusion, event: VkBotEvent, payload):
         client.get_api().messages.send(peer_id=event.obj.peer_id,
                                        random_id=get_random_id(),
                                        message="Получен payload: %s" % json.dumps(payload)
                                        )
-        if "act" in payload:
-            act = payload["act"]
-            if act == "next_page":
-                send_keyboard(client, self, event, page=payload["page"])
