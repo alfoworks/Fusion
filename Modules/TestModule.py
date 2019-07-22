@@ -1,25 +1,9 @@
 import json
-import os
-import requests
 
 from vk_api.bot_longpoll import VkBotEvent
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
-
-
-def process_natural_language(req, token):
-    json_req = {
-        "query": req,
-        "lang": "ru",
-        "session_id": "fusion",
-        "v": "20170712",
-    }
-    headers = {'Authorization': 'Bearer {0}'.format(token)}
-    body = json.dumps(json_req)
-    url = "https://api.dialogflow.com/v1/query"
-    resp = requests.post(url, data=body, headers=headers)
-    return resp.json()
 
 
 class Module(ModuleManager.Module):
