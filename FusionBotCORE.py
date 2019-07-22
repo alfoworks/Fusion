@@ -68,7 +68,7 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
             except ReadTimeout:
                 pass
             except Exception as err:
-                self.logger.log(3, str(err))
+                self.logger.log(4, str(err))
 
 
 client: Fusion = Fusion(token=vk_token, api_version=api_version)
@@ -159,6 +159,7 @@ for event in longpoll.listen():
             try:
                 ok = command.run(event, args, keys)
             except AccessDeniedException:
+                logger.log(1, "Нет прав.")
                 vk_api.messages.send(
                     peer_id=event.obj.peer_id,
                     message="У вас недостаточно прав для выполнения данной команды.",

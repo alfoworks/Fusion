@@ -60,8 +60,8 @@ class ModuleManager:
     tasks = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
-    mention_regex = re.compile(_native_mention_regex_0)
-    bot_mention_regex = re.compile(_mention_regex)
+    native_mention_regex = re.compile(_native_mention_regex_0)
+    mention_regex = re.compile(_mention_regex)
     logger = Logger(app="Module Manager")
 
     class Module:
@@ -185,10 +185,10 @@ class Fusion(VkApi):
                     self.module_manager.logger.log(2, "Loaded module \"%s\"" % instance.name)
         self.module_manager.add_module(BaseModule())
 
-    def run_modules(self):  # fusionClient: VkApi):
+    def run_modules(self):
         for key_1 in list(self.module_manager.modules):
             module = self.module_manager.modules[key_1]
-            module.run(self)  # fusionClient)
+            module.run(self)
 
     def load_params(self):
         if not os.path.isfile(self.module_manager.PARAMS_FILE):
@@ -198,7 +198,7 @@ class Fusion(VkApi):
                 self.module_manager.params = pickle.load(f)
 
     @staticmethod
-    def create_payload(module: ModuleManager.Module, payload):
+    def create_payload(payload, module: ModuleManager.Module):
         return json.dumps({
             "module": module.name,
             "payload": payload,
