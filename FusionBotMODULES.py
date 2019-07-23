@@ -15,6 +15,7 @@ _native_mention_regex_0 = r"\[id(\d+)\|(.+?)\]"
 _mention_regex = r"<@(\d+)>"
 
 
+# noinspection PyUnusedLocal
 class Logger:
     thread = "Main"
     app = "Core"
@@ -52,6 +53,25 @@ class Logger:
     def log(self, level: int, text: str):
         for line in text.splitlines():
             self.raw_log(level, line)
+
+    def debug(self, msg, *args, **kwargs):
+        self.log(1, msg)
+
+    def info(self, msg, *args, **kwargs):
+        self.log(2, msg)
+
+    def warn(self, msg, *args, **kwargs):
+        self.log(3, msg)
+
+    def error(self, msg, *args, **kwargs):
+        self.log(4, msg)
+
+    def fatal(self, msg, *args, **kwargs):
+        self.log(5, msg)
+
+    warning = warn
+    exception = error
+    critical = fatal
 
 
 class AccessDeniedException(Exception):
@@ -176,16 +196,20 @@ class Fusion(VkApi):
     MODULES_DIR = "Modules"
     cmd_prefix = "/"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logger = Logger(app="VkApi")
+
     def load_modules(self):
         for file in os.listdir(self.MODULES_DIR):
             if file.endswith(".py"):
                 module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
                                     fromlist=["Module"])
-                instance = module.Module()
                 do_load = True
                 if hasattr(module, "load_module"):
                     do_load = module.load_module
                 if do_load and hasattr(module, "Module"):
+                    instance = module.Module()
                     self.module_manager.add_module(instance)
                     self.module_manager.logger.log(2, "Loaded module \"%s\"" % instance.name)
         self.module_manager.add_module(BaseModule())
@@ -196,7 +220,7 @@ class Fusion(VkApi):
             self.module_manager.logger.log(2, "Running module %s" % module.name)
             try:
                 module.run(self)
-            except Exception as e:
+            except Exception:
                 self.module_manager.logger.log(5, traceback.format_exc())
                 exit(1)
 

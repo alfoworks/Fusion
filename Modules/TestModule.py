@@ -7,7 +7,7 @@ from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 
 
-def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, submit=False):
+def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, submit=True):
     start_index = page * (rows * columns)
     end_index = start_index + (rows * columns)
     if len(key_list) < start_index:
@@ -29,7 +29,7 @@ def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, 
     keyboard.add_button("Отмена", color=VkKeyboardColor.NEGATIVE, payload=Fusion.create_payload({
         "act": "cancel",
     }, module))
-    if not submit:
+    if submit:
         keyboard.add_button("Отправить", color=VkKeyboardColor.POSITIVE, payload=Fusion.create_payload({
             "act": "submit",
         }, module))
@@ -45,8 +45,6 @@ class Module(ModuleManager.Module):
     name = "TestModule"
     description = "Тестовый модуль"
     GUILD_LOCK = []
-    # wit = None
-    dialogflow_token = None
     keys = []
 
     def run(self, client: Fusion):
@@ -84,13 +82,28 @@ class Module(ModuleManager.Module):
             def run(self, event: VkBotEvent, args, keys):
                 client.get_api().messages.send(
                     message="1234",
-                    reply_to=event.obj.id,
+                    reply_to=event.obj.conversation_message_id,
                     random_id=get_random_id(),
                     peer_id=event.obj.peer_id
                 )
                 return True
 
         client.module_manager.add_command(ReplyTestCommand(), self)
+
+        class TestCommand(ModuleManager.Command):
+            name = "test"
+            description = "Тесты-хуесты"
+
+            def run(self, event: VkBotEvent, args, keys):
+                for i in range(2):
+                    client.get_api().messages.send(
+                        message="1234",
+                        random_id=get_random_id(),
+                        peer_id=event.obj.peer_id
+                    )
+                return True
+
+        client.module_manager.add_command(TestCommand(), self)
 
     def on_payload(self, client: Fusion, event: VkBotEvent, payload):
         client.get_api().messages.send(peer_id=event.obj.peer_id,
