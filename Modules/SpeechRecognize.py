@@ -1,11 +1,9 @@
-import json
 import os
-
 import requests
+
 from vk_api.bot_longpoll import VkBotEvent, VkBotEventType, DotDict
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
-from wit import Wit, BadRequestError
 
 
 def find_audio_in_fwd_messages(msg):
@@ -21,25 +19,25 @@ def find_audio_in_fwd_messages(msg):
                 return res
 
 
-def recognize_audio(audio_attachment, wit_client):
-    url = audio_attachment["audio_message"]["link_mp3"]
-    res = requests.get(url, allow_redirects=True)
-    try:
-        resp = wit_client.post_speech(res.content, "mpeg")
-        return resp["_text"]
-    except BadRequestError as e:
-        return json.loads(str(e))
+def recognize_audio(audio_attachment):
+    url = audio_attachment["audio_message"]["link_ogg"]
+    file = requests.get(url, allow_redirects=True)
+    response = requests.post("https://stt.api.cloud.yandex.net/speech/v1/stt:recognize", data=file.content, headers={
+        'Authorization': 'Api-Key ' + os.environ.get("yandex_api_token"),
+    })
+    code = int(response.status_code)
+    if code == 200:
+        return response.json()["result"]
+    else:
+        return response.json()
 
 
 class Module(ModuleManager.Module):
     name = "SpeechRecognize"
     description = "Модуль распознавания голосовых сообщений"
     GUILD_LOCK = []
-    wit = None
 
     def run(self, client: Fusion):
-        self.wit = Wit(os.getenv("fusion_wit_token"))
-
         class RecognizeCommand(ModuleManager.Command):
             name = "recognize"
             description = "Распознать пересланное голосовое сообщение"
@@ -50,15 +48,12 @@ class Module(ModuleManager.Module):
                 audio_attachment = find_audio_in_fwd_messages(event.obj)
                 if not audio_attachment:
                     return False
-                res = recognize_audio(audio_attachment, self.module.wit)
+                res = recognize_audio(audio_attachment)
                 text = None
                 if type(res) == dict:
                     error = res
-                    if error["code"] == "timeout":
-                        text = "Сообщение не может быть длиной более 20 секунд."
-                    else:
-                        text = "Произошла неизвестная ошибка.\n\nКод:%s\nОписание:%s" % (
-                            error["code"], error["error"])
+                    text = "Произошла неизвестная ошибка.\n\nКод:%s\nОписание:%s" % (
+                        error["error_code"], error["error_message"])
                 elif type(res) == str:
                     text = "Распознано голосовое сообщение:\n\n%s" % res
                 client.get_api().messages.send(
@@ -67,6 +62,7 @@ class Module(ModuleManager.Module):
                     random_id=get_random_id(),
                 )
                 return True
+
         client.module_manager.add_command(RecognizeCommand(), self)
 
     def on_event(self, client: Fusion, event: VkBotEvent):
@@ -75,15 +71,12 @@ class Module(ModuleManager.Module):
                 attachment = event.obj.attachments[0]
                 if attachment["type"] == "audio_message":
                     client.get_api().messages.setActivity(type="typing", peer_id=event.obj.peer_id)
-                    res = recognize_audio(attachment, self.wit)
+                    res = recognize_audio(attachment)
                     text = None
                     if type(res) == dict:
                         error = res
-                        if error["code"] == "timeout":
-                            text = "Сообщение не может быть длиной более 20 секунд."
-                        else:
-                            text = "Произошла неизвестная ошибка.\n\nКод:%s\nОписание:%s" % (
-                                error["code"], error["error"])
+                        text = "Произошла неизвестная ошибка.\n\nКод:%s\nОписание:%s" % (
+                            error["error_code"], error["error_message"])
                     elif type(res) == str:
                         text = "Распознано голосовое сообщение:\n\n%s" % res
                     client.get_api().messages.send(

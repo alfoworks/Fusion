@@ -95,12 +95,11 @@ class Module(ModuleManager.Module):
             description = "Тесты-хуесты"
 
             def run(self, event: VkBotEvent, args, keys):
-                for i in range(2):
-                    client.get_api().messages.send(
-                        message="1234",
-                        random_id=get_random_id(),
-                        peer_id=event.obj.peer_id
-                    )
+                a = client.get_api().messages.send(
+                    message="1234",
+                    random_id=get_random_id(),
+                    peer_id=event.obj.peer_id
+                )
                 return True
 
         client.module_manager.add_command(TestCommand(), self)

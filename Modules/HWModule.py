@@ -192,12 +192,12 @@ class Module(ModuleManager.Module):
                 except Exception:  # вот как бля в этом питоне перехватить один из двух эксепшнов блядь?
                     return False
                 this_peer_id = event.obj.peer_id
-                this_chat = client.module_manager.params["hw_chatids"][]
+                this_chat = client.module_manager.params["hw_chatids"][this_peer_id]
                 text = "Чат успешно отвязан"
                 if chat_id in client.module_manager.params["hw_chatids"]:
                     chat = client.module_manager.params["hw_chatids"][chat_id]
                     if chat["referer"]:
-
+                        pass
                     else:
                         text = "Данный чат не привязан к этому чату"
                 else:
