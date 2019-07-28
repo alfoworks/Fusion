@@ -33,7 +33,7 @@ def recognize_audio(audio_attachment):
 
 
 class Module(ModuleManager.Module):
-    name = "SpeechRecognize"
+    name = "SpeechRecognition"
     description = "Модуль распознавания голосовых сообщений"
     GUILD_LOCK = []
 
@@ -53,7 +53,8 @@ class Module(ModuleManager.Module):
                 if type(res) == dict:
                     error = res
                     text = "Произошла неизвестная ошибка.\n\nКод:%s\nОписание:%s" % (
-                        error["error_code"], error["error_message"])
+                        error["error_code"], error["error_message"]
+                    )
                 elif type(res) == str:
                     text = "Распознано голосовое сообщение:\n\n%s" % res
                 client.get_api().messages.send(

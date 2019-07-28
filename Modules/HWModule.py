@@ -42,16 +42,16 @@ def select_most_suitable(source, pattern: list):
     return pattern[distances.index(min(distances))]
 
 
-def parse_date(string: str):
+def parse_date(datestring: str):
     try:
-        datetime_1 = datetime.datetime.strptime(string, "%d.%m.%Y").date()
+        datetime_1 = datetime.datetime.strptime(datestring, "%d.%m.%Y").date()
     except ValueError:
         pass
     else:
         return datetime_1.weekday(), datetime_1
     mix = weekdaysForParse["compact"] + weekdaysForParse["full"] + weekdaysForParse["relative"]
-    string = string.lower()
-    weekday_str = select_most_suitable(string, mix)
+    datestring = datestring.lower()
+    weekday_str = select_most_suitable(datestring, mix)
     if weekday_str in weekdaysForParse["relative"]:
         now = datetime.datetime.now().date()
         now = now + datetime.timedelta(weekdaysForParse["relative"][weekday_str])
@@ -102,6 +102,7 @@ def send_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, su
 
 def random_str(stringLength=16):
     password_characters = string.ascii_letters + string.digits + string.punctuation
+    # noinspection PyUnusedLocal
     return ''.join(random.choice(password_characters) for i in range(stringLength))
 
 
@@ -185,22 +186,29 @@ class Module(ModuleManager.Module):
         class UnbindCommand(ModuleManager.Command):
             name = "hw_unbind"
             description = "Отвязать привязанный чат"
+            args = "<chat_id>"
 
             def run(self, event: VkBotEvent, args, keys):
                 try:
                     chat_id = int(args[0])
                 except Exception:  # вот как бля в этом питоне перехватить один из двух эксепшнов блядь?
                     return False
-                this_peer_id = event.obj.peer_id
-                this_chat = client.module_manager.params["hw_chatids"][this_peer_id]
+                peer_id = event.obj.peer_id
                 text = "Чат успешно отвязан"
-                if chat_id in client.module_manager.params["hw_chatids"]:
+                try:
                     chat = client.module_manager.params["hw_chatids"][chat_id]
-                    if chat["referer"]:
-                        pass
-                    else:
+                    try:
+                        ref = chat["referer"]
+                        if ref == peer_id:
+                            del client.module_manager.params["hw_chatids"][chat_id]
+                    except KeyError:
                         text = "Данный чат не привязан к этому чату"
-                else:
-                    text = "Данный чат не существует в моих базах данных"
+                except KeyError:
+                    text = "Данный чат не существует в базе данных"
+                client.get_api().messages.send(
+                    message=text,
+                    peer_id=peer_id,
+                    random_id=get_random_id()
+                )
 
 
