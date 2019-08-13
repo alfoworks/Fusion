@@ -11,6 +11,8 @@ from vk_api import VkApi
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotEvent
 
+from FusionBotCORE import event
+
 _native_mention_regex_0 = r"\[id(\d+)\|(.+?)\]"
 _mention_regex = r"<@(\d+)>"
 
@@ -217,7 +219,7 @@ class Fusion(VkApi):
     def run_modules(self):
         for key_1 in list(self.module_manager.modules):
             module = self.module_manager.modules[key_1]
-            self.module_manager.logger.log(2, "Running module %s" % module.name)
+            self.module_manager.logger.log(2, "Running module \"%s\"" % module.name)
             try:
                 module.run(self)
             except Exception:
@@ -332,7 +334,7 @@ class BaseModule(ModuleManager.Module):
         class ParamsCommand(ModuleManager.Command):
             name = "params"
             description = "Список параметров и управление ими"
-            args = "[set] [key] [value]"
+            args = "[set] <key> <value>"
             permissions = ["administrator"]
 
             def run(self, event: VkBotEvent, args, keys):
@@ -406,7 +408,7 @@ class BaseModule(ModuleManager.Module):
                             try:
                                 client.module_manager.params["permissions"][user_id].remove(args[1])
                             except ValueError:
-                                text += "У данного пользователя нет такого разрешения.\n"
+                                text += "У пользователя %s нет разрешения %s.\n" % (user_id, args[1])
                             else:
                                 text += "Успешно удалено разрешение %s у пользователя с id %s.\n" % (args[1], user_id)
                         else:
