@@ -62,9 +62,9 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
     logger = Logger(thread="Longpoll")
 
     def listen(self):
-        for scheduler in client.module_manager.schedulers.values():
-            scheduler.run_pending()
         while True:
+            for scheduler in client.module_manager.schedulers.values():
+                scheduler.run_pending()
             try:
                 for _event in self.check():
                     yield _event

@@ -55,7 +55,7 @@ class Module(ModuleManager.Module):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
         self.keys = []
         scheduler = client.module_manager.get_scheduler(self)
-        scheduler.every(1).second.do(job)
+        scheduler.every(1).hour.do(job)
         for elem in range(72):
             self.keys.append({
                 "label": "Кнопка%s" % elem,
