@@ -2,20 +2,24 @@ import os
 import uuid
 
 from vk_api.bot_longpoll import VkBotEvent
-from uuid import UUID
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
-from TGInterface import TGBot
-from vk_api.bot_longpoll import DotDict
+from TGInterface import TGBot, DotDict
 
 
 class List(list):
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
     def filter(self, **kwargs):
         def filter_function(elem: dict):
             for _key in kwargs:
                 no_name = _key.split("__")
                 key = no_name[0]
-                if key not in self:
+                if key not in elem:
                     return False
                 modifier = None if no_name[-1] == no_name[0] else no_name[1]
                 if not modifier:
@@ -30,7 +34,7 @@ class List(list):
                             return False
             return True
 
-        return filter(filter_function, self)
+        return List(filter(filter_function, self))
 
 
 class Module(ModuleManager.Module):
@@ -38,6 +42,13 @@ class Module(ModuleManager.Module):
     description = "Мост между Telegram и ВКонтакте"
     telegram = None
     bridge_username = None
+    queue = []
+
+    async def cycle(self):
+        if self.queue:
+            text = ""
+            for message in self.queue:
+
 
     def run(self, client: Fusion):
         self.telegram = TGBot(token=os.getenv("bridge_token"))
@@ -65,13 +76,21 @@ class Module(ModuleManager.Module):
                     "uuid": peer_uuid,
                     "telegram_id": None,
                 }))
+                client.module_manager.save_params()
                 client.get_api().messages.send(
                     peer_id=peer_id,
-                    message="Теперь вам нужно перейти к боту: t.me/%s?start=%s" % (
-                        self.module.bridge_username,
-                        peer_uuid.hex
-                    ),
+                    message="Теперь вам нужно перейти к боту t.me/%s и выполнить команду в необходимом вам "
+                            "чате:\n\n/start %s\n\nЛибо перейти по ссылке, что бы бот писал напрямую вам: "
+                            "t.me/%s?start=%s" % (
+                                self.module.bridge_username,
+                                peer_uuid.hex,
+                                self.module.bridge_username,
+                                peer_uuid.hex
+                            ),
                     random_id=get_random_id(),
                 )
+                return True
 
         client.module_manager.add_command(BindCommand(), self)
+
+

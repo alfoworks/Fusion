@@ -10,6 +10,43 @@ def get_url(url):
     return proxy_url + parse.quote_plus(url)
 
 
+class DotList(list):
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for elem in self:
+            if type(elem) == dict:
+                self[self.index(elem)] = DotDict(elem)
+            elif type(elem) == list:
+                self[self.index(elem)] = DotList(elem)
+
+
+class DotDict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for key in self:
+            value = self[key]
+            if type(value) == dict:
+                self[key] = DotDict(value)
+            elif type(value) == list:
+                self[key] = DotList(value)
+
+
 class ApiError(Exception):
     code: int
     description: str
@@ -39,7 +76,7 @@ class TGBot:
         json = response.json()
         if not json["ok"]:
             raise ApiError(json["error_code"], json["description"])
-        return json["result"]
+        return DotDict(json["result"])
 
     def get_api(self):
         return TGApi(self)
@@ -58,7 +95,7 @@ class TGLongpoll:
         res = self.tg.getUpdates(**kwargs)
         updates: list = res.json()
         last = updates[-1]
-        self.offset = last["update_id"]+1
+        self.offset = last["update_id"] + 1
         return updates
 
 

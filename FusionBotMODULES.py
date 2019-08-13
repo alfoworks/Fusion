@@ -11,8 +11,6 @@ from vk_api import VkApi
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotEvent
 
-from FusionBotCORE import event
-
 _native_mention_regex_0 = r"\[id(\d+)\|(.+?)\]"
 _mention_regex = r"<@(\d+)>"
 

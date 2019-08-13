@@ -1,13 +1,9 @@
 import re
 
-regex = re.compile(r"<@(\d+)>")
-S = "1234 <@123> ывы <@456> <@789>"
+regex = re.compile(r"\[id(\d+)\|(.+?)\]")
+S = "/123 [id168958515|@herobrine1st_erq]"
 
 for _id in regex.findall(S):
     print("id:", _id)
 
-
-# a = regex.search(S)
-# print(a[1])
-
-# print(regex.sub(r"<@\1>", S))
+print(regex.sub(r"<@\1>", S))

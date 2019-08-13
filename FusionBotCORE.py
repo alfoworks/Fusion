@@ -32,9 +32,10 @@ def process_mentions(_event_0: VkBotEvent):
     if _event_0.type in [VkBotEventType.MESSAGE_NEW, VkBotEventType.MESSAGE_EDIT, VkBotEventType.MESSAGE_REPLY]:
         _event_0.obj.mentions = {}
         _event_0.obj.raw_text = _event_0.obj.text
-        for (user_id, mention_name) in client.module_manager.mention_regex.findall(_event_0.obj.text):
+        for (user_id, mention_name) in client.module_manager.native_mention_regex.findall(_event_0.obj.text):
             _event_0.obj.mentions[user_id] = mention_name
-        _event_0.obj.text = client.module_manager.mention_regex.sub(r"<@\1>", _event_0.obj.text)
+        _event_0.obj.text = client.module_manager.native_mention_regex.sub(r"<@\1>", _event_0.obj.text)
+    return _event_0
 
 
 def parse(raw):
@@ -94,7 +95,7 @@ logger.log(2, "Loaded Params: %s" % len(client.module_manager.params))
 print("")
 
 for event in longpoll.listen():
-    process_mentions(event)
+    event = process_mentions(event)
     for _, mod in list(client.module_manager.modules.items()):
         try:
             mod.on_event(client, event)
@@ -103,7 +104,12 @@ for event in longpoll.listen():
             logger.log(4, traceback.format_exc())
     if event.type == VkBotEventType.MESSAGE_NEW:
         if "payload" in event.obj:
-            logger.log(1, "Получен payload из %s от %s: %s" % (event.obj.peer_id, event.obj.from_id, event.obj.payload))
+            logger.log(1, "Получен payload из %s от %s: %s" % (
+                    event.obj.peer_id,
+                    event.obj.from_id,
+                    event.obj.payload
+                )
+            )
             payload = {}
             try:
                 payload = json.loads(event.obj.payload)
@@ -118,7 +124,12 @@ for event in longpoll.listen():
                     logger.log(4, traceback.format_exc())
 
         elif event.obj.text.startswith(client.cmd_prefix):
-            logger.log(1, "Обрабатываю команду %s из %s от %s" % (event.obj.text, event.obj.peer_id, event.obj.from_id))
+            logger.log(1, "Обрабатываю команду %s из %s от %s" % (
+                    event.obj.text,
+                    event.obj.peer_id,
+                    event.obj.from_id
+                )
+            )
             args = event.obj.text.split()
             cmd = args.pop(0)[len(client.cmd_prefix):].lower()
             if cmd not in client.module_manager.commands:
@@ -181,8 +192,10 @@ for event in longpoll.listen():
                     keys_user = []
                     for key in command.keys:
                         keys_user.append("[--%s]" % key)
-                    text = "Недостаточно аргументов!\n %s%s %s %s\n - %s" % (client.cmd_prefix, command.name,
-                                                                             command.args, " ".join(keys_user),
-                                                                             command.description)
+                    text = "Недостаточно аргументов!\n %s%s %s %s\n - %s" % (
+                        client.cmd_prefix, command.name,
+                        command.args, " ".join(keys_user),
+                        command.description
+                    )
                     vk_api.messages.send(peer_id=event.obj.peer_id, message=text, random_id=get_random_id())
                     logger.log(1, "Недостаточно аргументов.")
