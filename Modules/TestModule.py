@@ -1,10 +1,9 @@
-import asyncio
 import json
+import schedule
 
 from vk_api.bot_longpoll import VkBotEvent
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
-
 from FusionBotMODULES import Fusion, ModuleManager
 
 
@@ -42,6 +41,8 @@ def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, 
     return keyboard.get_keyboard()
 
 
+def job():
+    print("Working")
 
 
 class Module(ModuleManager.Module):
@@ -53,6 +54,8 @@ class Module(ModuleManager.Module):
     def run(self, client: Fusion):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
         self.keys = []
+        scheduler = client.module_manager.get_scheduler(self)
+        scheduler.every(1).second.do(job)
         for elem in range(72):
             self.keys.append({
                 "label": "Кнопка%s" % elem,

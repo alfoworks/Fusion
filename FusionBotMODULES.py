@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import pickle
@@ -10,6 +9,7 @@ from datetime import datetime
 from vk_api import VkApi
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotEvent
+from schedule import Scheduler
 
 _native_mention_regex_0 = r"\[id(\d+)\|(.+?)\]"
 _mention_regex = r"<@(\d+)>"
@@ -82,7 +82,7 @@ class AccessDeniedException(Exception):
 class ModuleManager:
     modules = dict()
     params = dict()
-    tasks = dict()
+    schedulers = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
     native_mention_regex = re.compile(_native_mention_regex_0)
@@ -146,7 +146,6 @@ class ModuleManager:
             raise ValueError("A module with name \"%s\" already exists." % module.name)
 
         self.modules[module.name] = module
-        self.tasks[module.name] = []
 
     def unload_module(self, module_name: str):
         if module_name not in self.modules:
@@ -157,13 +156,11 @@ class ModuleManager:
         for _, command in list(self.commands.items()):
             if command.module.name == module_name:
                 self.remove_command(command.name)
-
                 self.logger.log(1, "Removed command \"%s\" from module \"%s\"." % (command.name, module_name))
 
-        for task in self.tasks[module_name]:
-            task.cancel()
-
-            self.logger.log(1, "Cancelled task from module \"%s\"." % module_name)
+        if module_name in self.schedulers:
+            del self.schedulers[module_name]
+            self.logger.log(1, "Cancelled scheduler from module \"%s\"." % module_name)
 
         del self.modules[module_name]
 
@@ -186,6 +183,11 @@ class ModuleManager:
         if key not in self.params:
             self.params[key] = value_default
             self.save_params()
+
+    def get_scheduler(self, module) -> Scheduler:
+        if module.name not in self.schedulers:
+            self.schedulers[module.name] = Scheduler()
+        return self.schedulers[module.name]
 
 
 class Fusion(VkApi):
@@ -227,6 +229,10 @@ class Fusion(VkApi):
         else:
             with open(self.module_manager.PARAMS_FILE, "rb") as f:
                 self.module_manager.params = pickle.load(f)
+
+    def schedule_init(self):
+        for module in self.module_manager.modules:
+            self.module_manager.schedulers[module] = Scheduler()
 
     @staticmethod
     def create_payload(payload, module: ModuleManager.Module):
