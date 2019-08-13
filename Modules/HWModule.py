@@ -30,7 +30,13 @@ def distance(a, b):
 weekdaysForParse = {
     'compact': ["пн", "вт", "ср", "чт", "пт", "сб", "вс"],
     'full': ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"],
-    'relative': {'завтра': 1, 'послезавтра': 2, 'сегодня': 0, 'вчера': -1, 'позавчера': -2}
+    'relative': {
+        'завтра': 1,
+        'послезавтра': 2,
+        'сегодня': 0,
+        'вчера': -1,
+        'позавчера': -2
+    }
 }
 
 
@@ -42,16 +48,16 @@ def select_most_suitable(source, pattern: list):
     return pattern[distances.index(min(distances))]
 
 
-def parse_date(datestring: str):
+def parse_date(date_string: str):
     try:
-        datetime_1 = datetime.datetime.strptime(datestring, "%d.%m.%Y").date()
+        datetime_1 = datetime.datetime.strptime(date_string, "%d.%m.%Y").date()
     except ValueError:
         pass
     else:
         return datetime_1.weekday(), datetime_1
     mix = weekdaysForParse["compact"] + weekdaysForParse["full"] + weekdaysForParse["relative"]
-    datestring = datestring.lower()
-    weekday_str = select_most_suitable(datestring, mix)
+    date_string = date_string.lower()
+    weekday_str = select_most_suitable(date_string, mix)
     if weekday_str in weekdaysForParse["relative"]:
         now = datetime.datetime.now().date()
         now = now + datetime.timedelta(weekdaysForParse["relative"][weekday_str])
@@ -66,7 +72,7 @@ def parse_date(datestring: str):
     return now.weekday(), now
 
 
-def send_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, submit=True):
+def build_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, submit=False):
     start_index = page * (rows * columns)
     end_index = start_index + (rows * columns)
     if len(key_list) < start_index:
@@ -101,9 +107,8 @@ def send_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, su
 
 
 def random_str(stringLength=16):
-    password_characters = string.ascii_letters + string.digits + string.punctuation
     # noinspection PyUnusedLocal
-    return ''.join(random.choice(password_characters) for i in range(stringLength))
+    return ''.join(random.choice(string.printable) for i in range(stringLength))
 
 
 class Module(ModuleManager.Module):
@@ -131,7 +136,9 @@ class Module(ModuleManager.Module):
             def run(self, event: VkBotEvent, args, keys):
                 try:
                     chat_id = int(args[0])
-                except Exception:  # вот как бля в этом питоне перехватить один из двух эксепшнов блядь?
+                except IndexError:
+                    return False
+                except ValueError:
                     return False
                 identificator = random_str()
                 while identificator in client.module_manager.params["hw_data"]:
@@ -157,7 +164,9 @@ class Module(ModuleManager.Module):
                 this_peer_id = event.obj.peer_id
                 try:
                     chat_id = int(args[0])
-                except Exception:  # вот как бля в этом питоне перехватить один из двух эксепшнов блядь?
+                except IndexError:
+                    return False
+                except ValueError:
                     return False
                 hw_chatids = client.module_manager.params["hw_chatids"]
                 if this_peer_id not in hw_chatids:
@@ -191,7 +200,9 @@ class Module(ModuleManager.Module):
             def run(self, event: VkBotEvent, args, keys):
                 try:
                     chat_id = int(args[0])
-                except Exception:  # вот как бля в этом питоне перехватить один из двух эксепшнов блядь?
+                except IndexError:
+                    return False
+                except ValueError:
                     return False
                 peer_id = event.obj.peer_id
                 text = "Чат успешно отвязан"
@@ -201,6 +212,8 @@ class Module(ModuleManager.Module):
                         ref = chat["referer"]
                         if ref == peer_id:
                             del client.module_manager.params["hw_chatids"][chat_id]
+                        else:
+                            text = "Данный чат не привязан к этому чату"
                     except KeyError:
                         text = "Данный чат не привязан к этому чату"
                 except KeyError:
@@ -211,4 +224,4 @@ class Module(ModuleManager.Module):
                     random_id=get_random_id()
                 )
 
-
+        client.module_manager.add_command(UnbindCommand(), self)

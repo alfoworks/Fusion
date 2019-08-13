@@ -12,7 +12,6 @@ from pyotp import TOTP
 from requests import ReadTimeout
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll, VkBotEvent, DotDict
 from vk_api.utils import get_random_id
-
 from FusionBotMODULES import ModuleManager, Logger, Fusion, AccessDeniedException
 from termcolor import colored
 
