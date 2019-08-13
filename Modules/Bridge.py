@@ -1,10 +1,15 @@
+import asyncio
 import os
 import uuid
+from datetime import datetime
 
 from vk_api.bot_longpoll import VkBotEvent
 from vk_api.utils import get_random_id
 from FusionBotMODULES import Fusion, ModuleManager
 from TGInterface import TGBot, DotDict
+
+user_cache = []
+load_module = False
 
 
 class List(list):
@@ -44,11 +49,37 @@ class Module(ModuleManager.Module):
     bridge_username = None
     queue = []
 
-    async def cycle(self):
-        if self.queue:
-            text = ""
-            for message in self.queue:
+    async def cycle(self, client: Fusion):
+        while True:
+            await asyncio.sleep(5)
+            if self.queue:
+                texts = {}
+                ignore = []
+                for message in self.queue:
+                    prev_text = texts[message.peer_id] if message.peer_id in texts else ""
+                    text = prev_text
+                    if message.peer_id not in ignore:
+                        date = datetime.utcfromtimestamp(message.date)
+                        if message.from_id not in user_cache:
+                            user_cache[message.from_id] = client.get_api().users.get(user_ids=message.from_id)
+                        user = user_cache[message.from_id]
+                        msg = "%s %s в %s\n\n%s\n\n" % (
+                            user["first_name"], user["last_name"], date.strftime("%H:%M:%S"), message.raw_text
+                        )
+                        text += msg
 
+                    if len(text) > 4096:
+                        text = prev_text
+                        ignore.append(message.peer_id)
+                    else:
+                        self.queue.remove(message)
+                    texts[message.peer_id] = text
+                for vk_id in texts:
+                    chat = client.module_manager.params["tg_binds"].filter(vk_id=vk_id)
+                    if chat.telegram_id:
+                        self.telegram.get_api().sendMessage(chat_id=chat.telegram_id, text=texts[vk_id])
+            if True:
+                pass
 
     def run(self, client: Fusion):
         self.telegram = TGBot(token=os.getenv("bridge_token"))
@@ -92,5 +123,3 @@ class Module(ModuleManager.Module):
                 return True
 
         client.module_manager.add_command(BindCommand(), self)
-
-

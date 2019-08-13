@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from vk_api.bot_longpoll import VkBotEvent
@@ -41,6 +42,8 @@ def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, 
     return keyboard.get_keyboard()
 
 
+
+
 class Module(ModuleManager.Module):
     name = "TestModule"
     description = "Тестовый модуль"
@@ -49,7 +52,6 @@ class Module(ModuleManager.Module):
 
     def run(self, client: Fusion):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
-
         self.keys = []
         for elem in range(72):
             self.keys.append({

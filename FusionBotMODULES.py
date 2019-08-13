@@ -167,9 +167,6 @@ class ModuleManager:
 
         del self.modules[module_name]
 
-    def add_background_task(self, module: Module, coro):
-        self.tasks[module.name].append(asyncio.get_event_loop().create_task(coro))
-
     def add_command(self, command: Command, module: Module):
         command.module = module
         self.commands[command.name] = command

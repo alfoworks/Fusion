@@ -3,10 +3,10 @@ import re
 import time
 import traceback
 import os
-from json import JSONDecodeError
-
 import math
+import schedule
 
+from json import JSONDecodeError
 from os import path, environ
 from pyotp import TOTP
 from requests import ReadTimeout
@@ -63,6 +63,7 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
 
     def listen(self):
         while True:
+            schedule.run_pending()
             try:
                 for _event in self.check():
                     yield _event
