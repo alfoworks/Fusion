@@ -50,24 +50,25 @@ class Logger:
             _text += text
         print(_text)
 
-    def log(self, level: int, text: str):
+    def log(self, level: int, text: str, *args):
+        text = text % tuple(args)
         for line in text.splitlines():
             self.raw_log(level, line)
 
     def debug(self, msg, *args, **kwargs):
-        self.log(1, msg)
+        self.log(1, msg, *args)
 
     def info(self, msg, *args, **kwargs):
-        self.log(2, msg)
+        self.log(2, msg, *args)
 
     def warn(self, msg, *args, **kwargs):
-        self.log(3, msg)
+        self.log(3, msg, *args)
 
     def error(self, msg, *args, **kwargs):
-        self.log(4, msg)
+        self.log(4, msg, *args)
 
     def fatal(self, msg, *args, **kwargs):
-        self.log(5, msg)
+        self.log(5, msg, *args)
 
     warning = warn
     exception = error
