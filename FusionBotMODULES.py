@@ -92,7 +92,7 @@ class ModuleManager:
     class Module:
         name = "Sample module"
         description = "Sample description"
-        GUILD_LOCK = []
+        GUILD_LOCK = {}
 
         def run(self, client: VkApi):
             pass

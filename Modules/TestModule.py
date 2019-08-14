@@ -48,7 +48,6 @@ def job():
 class Module(ModuleManager.Module):
     name = "TestModule"
     description = "Тестовый модуль"
-    GUILD_LOCK = []
     keys = []
 
     def run(self, client: Fusion):

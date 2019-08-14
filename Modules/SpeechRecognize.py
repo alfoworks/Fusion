@@ -35,7 +35,6 @@ def recognize_audio(audio_attachment):
 class Module(ModuleManager.Module):
     name = "SpeechRecognition"
     description = "Модуль распознавания голосовых сообщений"
-    GUILD_LOCK = []
 
     def run(self, client: Fusion):
         class RecognizeCommand(ModuleManager.Command):

@@ -6,7 +6,6 @@ from FusionBotMODULES import Fusion, ModuleManager
 class Module(ModuleManager.Module):
     name = "FunStuff"
     description = "Модуль, который добавляет бесполезные, но интересные вещи."
-    GUILD_LOCK = []
 
     def run(self, client: Fusion):
         class ShrugCommand(ModuleManager.Command):

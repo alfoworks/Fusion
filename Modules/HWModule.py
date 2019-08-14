@@ -114,14 +114,11 @@ def random_str(stringLength=16):
 class Module(ModuleManager.Module):
     name = "HWModule"
     description = "А вот этого тебе лучше не знать.."
-    GUILD_LOCK = [2000000001, 168958515]
+    GUILD_LOCK = {2000000001, 168958515}
     logger = Logger(app="HWModule")
 
     def update_guild_lock(self, client: Fusion):
-        # noinspection SpellCheckingInspection
-        new_glock = set(self.GUILD_LOCK)
-        new_glock.update(list(client.module_manager.params["hw_chatids"].keys()))
-        self.GUILD_LOCK = list(new_glock)
+        self.GUILD_LOCK.update(list(client.module_manager.params["hw_chatids"].keys()))
 
     def run(self, client: Fusion):
         client.module_manager.add_param("hw_chatids", {})
