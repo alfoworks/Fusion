@@ -71,7 +71,7 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
             except ReadTimeout:
                 pass
             except Exception as err:
-                self.logger.log(4, str(err))
+                self.logger.log(3, str(err))
 
 
 client: Fusion = Fusion(token=vk_token, api_version=api_version)
