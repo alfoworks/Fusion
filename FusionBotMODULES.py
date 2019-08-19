@@ -3,6 +3,7 @@ import os
 import pickle
 import re
 import traceback
+import importlib
 
 from termcolor import colored
 from datetime import datetime
@@ -195,6 +196,7 @@ class Fusion(VkApi):
     module_manager = ModuleManager()
     MODULES_DIR = "Modules"
     cmd_prefix = "/"
+    modules_cache = dict()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -203,8 +205,11 @@ class Fusion(VkApi):
     def load_modules(self):
         for file in os.listdir(self.MODULES_DIR):
             if file.endswith(".py"):
+                if file in self.modules_cache:
+                    importlib.reload(self.modules_cache[file])
                 module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
                                     fromlist=["Module"])
+                self.modules_cache[file] = module
                 do_load = True
                 if hasattr(module, "load_module"):
                     do_load = module.load_module
