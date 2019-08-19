@@ -207,9 +207,10 @@ class Fusion(VkApi):
         for file in os.listdir(self.MODULES_DIR):
             if file.endswith(".py"):
                 if file in self.modules_cache:
-                    importlib.reload(self.modules_cache[file])
-                module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
-                                    fromlist=["Module"])
+                    module = importlib.reload(self.modules_cache[file])
+                else:
+                    module = __import__("%s.%s" % (self.MODULES_DIR, file[:-3]), globals(), locals(),
+                                        fromlist=["Module"])
                 self.modules_cache[file] = module
                 do_load = True
                 if hasattr(module, "load_module"):
