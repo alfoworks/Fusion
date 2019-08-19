@@ -36,6 +36,8 @@ class Logger:
         return iso[11:19]
 
     def __init__(self, thread="Main", app="Core"):
+        self.queue = []
+        self.running = False
         self.thread = thread
         self.app = app
 
@@ -84,7 +86,7 @@ class AccessDeniedException(Exception):
 class ModuleManager:
     modules = dict()
     params = dict()
-    schedulers = dict()
+    schedulers: dict[str, Scheduler] = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
     native_mention_regex = re.compile(_native_mention_regex_0)

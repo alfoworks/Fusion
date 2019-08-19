@@ -12,6 +12,8 @@ from pyotp import TOTP
 from requests import ReadTimeout
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll, VkBotEvent, DotDict
 from vk_api.utils import get_random_id
+
+import FusionBotTHREADING
 from FusionBotMODULES import ModuleManager, Logger, Fusion, AccessDeniedException
 from termcolor import colored
 
@@ -23,7 +25,6 @@ totp = TOTP(environ.get("fusion_TOTP_key"))
 args_regex = re.compile(r"(.*?)=(.+)")
 start_time = time.time()
 api_version = "5.101"
-
 
 ####################################
 
@@ -63,8 +64,6 @@ class FixedVkBotLongpoll(VkBotLongPoll):  # fix ReadTimeout exception
 
     def listen(self):
         while True:
-            for scheduler in client.module_manager.schedulers.values():
-                scheduler.run_pending()
             try:
                 for _event in self.check():
                     yield _event
@@ -90,6 +89,8 @@ client.load_params()
 logger.log(2, "Setting schedule logger and initializing job running")
 schedule.logger = Logger(thread="Schedule", app="Main")
 client.schedule_init()
+logger.log(2, "Starting threads...")
+FusionBotTHREADING.deploy(client.module_manager)
 logger.log(2, "Running modules...")
 client.run_modules()
 print("")
