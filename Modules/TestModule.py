@@ -42,7 +42,7 @@ def render_keyboard(key_list, module, page=0, rows=9, columns=4, one_time=True, 
 
 
 def job():
-    print("Working")
+    pass
 
 
 class Module(ModuleManager.Module):

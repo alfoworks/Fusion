@@ -86,7 +86,7 @@ class AccessDeniedException(Exception):
 class ModuleManager:
     modules = dict()
     params = dict()
-    schedulers: dict[str, Scheduler] = dict()
+    schedulers = dict()
     commands = dict()
     PARAMS_FILE = "botData.pkl"
     native_mention_regex = re.compile(_native_mention_regex_0)
