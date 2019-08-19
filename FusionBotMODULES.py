@@ -159,7 +159,6 @@ class ModuleManager:
             if command.module.name == module_name:
                 self.remove_command(command.name)
                 self.logger.log(1, "Removed command \"%s\" from module \"%s\"." % (command.name, module_name))
-
         if module_name in self.schedulers:
             del self.schedulers[module_name]
             self.logger.log(1, "Cancelled scheduler from module \"%s\"." % module_name)
@@ -169,11 +168,11 @@ class ModuleManager:
     def add_command(self, command: Command, module: Module):
         command.module = module
         self.commands[command.name] = command
+        self.logger.log(1, "Added command \"%s\" from module \"%s\"." % (command.name, module.name))
 
     def remove_command(self, command_name: str):
         if command_name not in self.commands:
             raise ValueError("Can't remove a module that doesn't exist (%s)." % command_name)
-
         del self.commands[command_name]
 
     def save_params(self):
