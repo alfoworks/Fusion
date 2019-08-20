@@ -7,7 +7,7 @@ class Module(ModuleManager.Module):
     name = "FunStuff"
     description = "Модуль, который добавляет бесполезные, но интересные вещи."
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         class ShrugCommand(ModuleManager.Command):
             name = "shrug"
             description = "¯\_(ツ)_/¯"

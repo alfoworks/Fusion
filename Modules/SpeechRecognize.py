@@ -36,7 +36,7 @@ class Module(ModuleManager.Module):
     name = "SpeechRecognition"
     description = "Модуль распознавания голосовых сообщений"
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         class RecognizeCommand(ModuleManager.Command):
             name = "recognize"
             description = "Распознать пересланное голосовое сообщение"

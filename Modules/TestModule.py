@@ -50,7 +50,7 @@ class Module(ModuleManager.Module):
     description = "Тестовый модуль"
     keys = []
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         # self.wit = Wit(os.getenv("fusion_wit_token"))
         self.keys = []
         scheduler = client.module_manager.get_scheduler(self)

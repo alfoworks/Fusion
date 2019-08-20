@@ -93,12 +93,33 @@ class ModuleManager:
     mention_regex = re.compile(_mention_regex)
     logger = Logger(app="Module Manager")
 
+    class Registry:
+        module = None
+        module_manager = None
+
+        def __init__(self, module, module_manager):
+            self.module = module
+            self.module_manager = module_manager
+
+        def add_command(self, command):
+            return self.module_manager.add_command(command, self.module)
+
+        def remove_command(self, command):
+            return self.module_manager.remove_command(command.name)
+
+        def get_scheduler(self) -> Scheduler:
+            return self.module_manager.get_scheduler(self.module)
+
     class Module:
         name = "Sample module"
         description = "Sample description"
         GUILD_LOCK = {}
 
-        def run(self, client: VkApi):
+        def run(self, client: VkApi, registry):
+            """
+            :param client: обьект, через который вы будете отправлять сообщения и делать любую другую работу с вк
+            :param registry: интерфейс регистров бота
+            """
             pass
 
         def on_event(self, client: VkApi, event: VkBotEvent):
@@ -226,7 +247,7 @@ class Fusion(VkApi):
             module = self.module_manager.modules[key_1]
             self.module_manager.logger.log(2, "Running module \"%s\"" % module.name)
             try:
-                module.run(self)
+                module.run(self, ModuleManager.Registry(module, self.module_manager))
             except Exception:
                 self.module_manager.logger.log(5, traceback.format_exc())
                 exit(1)
@@ -270,8 +291,9 @@ class BaseModule(ModuleManager.Module):
         else:
             return None
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry: ModuleManager.Registry):
         logger = Logger(app="BaseModule")
+        client.module_manager.add_param("permissions", {})
 
         class ModulesCommand(ModuleManager.Command):
             name = "modules"
@@ -312,7 +334,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        client.module_manager.add_command(ModulesCommand(), self)
+        registry.add_command(ModulesCommand())
 
         class CmdsCommand(ModuleManager.Command):
             name = "cmds"
@@ -338,7 +360,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        client.module_manager.add_command(CmdsCommand(), self)
+        registry.add_command(CmdsCommand())
 
         class ParamsCommand(ModuleManager.Command):
             name = "params"
@@ -390,7 +412,7 @@ class BaseModule(ModuleManager.Module):
                 )
                 return True
 
-        client.module_manager.add_command(ParamsCommand(), self)
+        registry.add_command(ParamsCommand())
 
         class PermissionsCommand(ModuleManager.Command):
             name = "permissions"
@@ -432,5 +454,4 @@ class BaseModule(ModuleManager.Module):
                 client.module_manager.save_params()
                 return True
 
-        client.module_manager.add_param("permissions", {})
-        client.module_manager.add_command(PermissionsCommand(), self)
+        registry.add_command(PermissionsCommand())
