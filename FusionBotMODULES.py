@@ -119,6 +119,14 @@ class ModuleManager:
         def run(self, event: VkBotEvent, args, keys):
             pass
 
+    class Registry:
+        module = None
+        module_manager = None
+
+        def __init__(self, module, module_manager):
+            self.module = module
+            self.module_manager = module_manager
+
     def has_permissions(self, command: Command, user_id) -> bool:
         if command.permissions:
             if str(user_id) in self.params["permissions"]:
