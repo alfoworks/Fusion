@@ -19,7 +19,7 @@ class Module(ModuleManager.Module):
     name = "Adisman"
     description = "Текстовая рекуррентная генеративная нейронная сеть."
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         client.module_manager.add_param("aiTemp", 0.9)
         for k in model_files:
             v = model_files[k]

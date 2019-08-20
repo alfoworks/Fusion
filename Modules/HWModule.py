@@ -120,7 +120,7 @@ class Module(ModuleManager.Module):
     def update_guild_lock(self, client: Fusion):
         self.GUILD_LOCK.update(list(client.module_manager.params["hw_chatids"].keys()))
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         client.module_manager.add_param("hw_chatids", {})
         client.module_manager.add_param("hw_data", {})
 

@@ -81,7 +81,7 @@ class Module(ModuleManager.Module):
             if True:
                 pass
 
-    def run(self, client: Fusion):
+    def run(self, client: Fusion, registry):
         self.telegram = TGBot(token=os.getenv("bridge_token"))
         self.bridge_username = self.telegram.get_api().getMe()["username"]
         client.module_manager.add_param("tg_binds", List())
