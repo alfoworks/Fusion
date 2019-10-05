@@ -4,9 +4,11 @@ import FusionBotMODULES
 from vk_api.bot_longpoll import VkBotEvent
 from FusionBotMODULES import ModuleManager, Fusion
 from vk_api.utils import get_random_id
-from textgenrnn import textgenrnn
+
 
 logger = FusionBotMODULES.Logger(app="Adisman")
+
+load_module = False
 
 model_files = {
     "weights_path": "NeuroNetworks/Adisman/adisman_weights.hdf5",
@@ -28,6 +30,7 @@ class Module(ModuleManager.Module):
                 logger.log(3, "No model files found. Module will not be loaded.")
                 client.module_manager.unload_module(self.name)
                 return
+        from textgenrnn import textgenrnn
         textgen = textgenrnn(weights_path=model_files["weights_path"], vocab_path=model_files["vocab_path"],
                              config_path=model_files["config_path"])
 
