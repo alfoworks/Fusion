@@ -8,6 +8,8 @@ from textgenrnn import textgenrnn
 
 logger = FusionBotMODULES.Logger(app="Adisman")
 
+load_module = False
+
 model_files = {
     "weights_path": "NeuroNetworks/Adisman/adisman_weights.hdf5",
     "vocab_path": "NeuroNetworks/Adisman/adisman_vocab.json",
